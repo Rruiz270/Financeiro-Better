@@ -1,0 +1,32 @@
+name: Update Financial Data
+
+on:
+  schedule:
+    - cron: '0 10 * * *'  # Daily at 7am BRT (10 UTC)
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Update data from APIs
+        env:
+          VINDI_KEY: ${{ secrets.VINDI_KEY }}
+          PAGARME_KEY: ${{ secrets.PAGARME_KEY }}
+          OMIE_APP_KEY: ${{ secrets.OMIE_APP_KEY }}
+          OMIE_APP_SECRET: ${{ secrets.OMIE_APP_SECRET }}
+        run: python update_data.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add *.js
+          git diff --cached --quiet || git commit -m "chore: daily data update $(date +%Y-%m-%d)"
+          git push
