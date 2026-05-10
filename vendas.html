@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendas — Cross-Match Plataformas</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f2f5}
+.header{background:linear-gradient(135deg,#0f766e,#115e59);color:white;padding:24px 40px}
+.header h1{font-size:22px;margin-bottom:4px}.header p{opacity:0.85;font-size:12px}
+.container{max-width:1550px;margin:0 auto;padding:20px}
+.alert{background:#fffbeb;border:1px solid #fbbf24;border-radius:10px;padding:10px 14px;margin:12px 0;font-size:11px;color:#92400e}
+.alert strong{color:#78350f}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:14px 0}
+.card{background:white;border-radius:10px;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,0.07);border-left:4px solid #ccc;cursor:pointer}
+.card:hover{transform:translateY(-1px)}.card h3{font-size:8px;text-transform:uppercase;color:#6b7280;margin-bottom:2px}
+.card .value{font-size:16px;font-weight:700}.card .sub{font-size:9px;color:#9ca3af;margin-top:2px}
+.filters-section{background:white;border-radius:12px;padding:14px;margin:14px 0;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-bottom:6px}
+.filter-group{display:flex;flex-direction:column;gap:2px}
+.filter-group label{font-size:8px;font-weight:700;text-transform:uppercase;color:#6b7280}
+.filter-group input,.filter-group select{padding:6px 8px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;background:#fafafa}
+.filter-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.btn{padding:4px 9px;border:1.5px solid #e5e7eb;border-radius:6px;background:white;font-size:10px;cursor:pointer}
+.btn:hover{border-color:#0f766e;color:#0f766e}
+#count{font-size:10px;color:#6b7280;margin-left:auto}
+.table-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-top:12px}
+.table-scroll{max-height:600px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:10px}
+thead{background:#f9fafb;position:sticky;top:0;z-index:10}
+th{padding:7px 4px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;cursor:pointer;font-size:9px;white-space:nowrap}
+td{padding:5px 4px;border-bottom:1px solid #f3f4f6}
+tr{cursor:pointer}tr:hover{background:#f0fdfa}
+tr.c-ok{background:#f0fdf4}tr.c-canceled{background:#f3e8ff}tr.c-refund{background:#fce7f3}
+tr.c-missing{background:#fef2f2}tr.c-no_payment{background:#fef2f2}tr.c-pending{background:#fffbeb}
+tr.c-no_nf{background:#fef9c3}tr.c-warning{background:#fff7ed}tr.c-pj_extra{background:#eff6ff}
+tr.c-value_diff{background:#fff1f2}
+.tag{display:inline-block;padding:2px 5px;border-radius:10px;font-size:8px;font-weight:600;white-space:nowrap}
+.tag-ok{background:#d1fae5;color:#065f46}.tag-canceled{background:#e9d5ff;color:#6b21a8}
+.tag-refund{background:#fbcfe8;color:#9d174d}.tag-missing{background:#fecaca;color:#991b1b}
+.tag-no_payment{background:#fecaca;color:#991b1b}.tag-pending{background:#fef08a;color:#854d0e}
+.tag-no_nf{background:#fef08a;color:#854d0e}.tag-warning{background:#fed7aa;color:#9a3412}
+.tag-pj_extra{background:#bfdbfe;color:#1e40af}.tag-value_diff{background:#fecdd3;color:#881337}
+.vc{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.check{color:#059669}.cross{color:#dc2626}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100}
+.modal-bg.show{display:flex;align-items:center;justify-content:center}
+.modal{background:white;border-radius:12px;padding:24px;max-width:750px;width:95%;max-height:85vh;overflow-y:auto}
+.modal h2{font-size:16px;margin-bottom:12px}.modal-close{float:right;cursor:pointer;font-size:20px;color:#6b7280}
+.mr{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f3f4f6;font-size:12px}
+.mr .lbl{color:#6b7280;min-width:160px}.mr .val{font-weight:600;text-align:right}
+.mr .val.ok{color:#059669}.mr .val.bad{color:#dc2626}.mr .val.warn{color:#d97706}
+.st{font-size:13px;font-weight:700;margin:14px 0 6px;padding-top:10px;border-top:2px solid #e5e7eb}
+.comp-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:11px}
+.comp-row.header{font-weight:700;color:#6b7280;font-size:10px;text-transform:uppercase}
+.comp-row .diff-ok{color:#059669;font-weight:600}.comp-row .diff-bad{color:#dc2626;font-weight:600}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>Vendas — Cross-Match Plataformas</h1>
+<p>3.331 vendas cruzadas com Vindi + Omie + Pagar.me | Clique para ver valores e divergências</p>
+</div>
+<div class="container">
+<div class="alert">
+<strong>982 vendas com divergência de valor</strong> entre planilha e plataformas (tolerância ±10% ou R$100).
+<strong>58 fora das plataformas</strong> (na planilha mas não na Vindi/Omie).
+<strong>134 sem NF Produto</strong>. <strong>566 canceladas</strong>. <strong>4 PJ extras</strong> (FAAP, Palmares, etc).<br><br>
+<strong style="color:#dc2626">⚠ Ação Financeiro — 58 vendas "Fora das Plataformas":</strong> A planilha diz NF enviada mas o CPF/CNPJ não foi encontrado na Vindi ou Omie. Investigar:
+<strong>1)</strong> CPF com formatação diferente entre planilha e plataforma;
+<strong>2)</strong> Nota emitida manualmente fora do Omie;
+<strong>3)</strong> CPF errado ou divergente na planilha;
+<strong>4)</strong> Cadastrado com CPF do responsável vs CPF do aluno.
+</div>
+<div class="cards" id="cards-container"></div>
+<div class="filters-section">
+<div class="filter-grid">
+<div class="filter-group"><label>Busca</label><input type="text" id="search" placeholder="Nome, CPF, produto..."></div>
+<div class="filter-group"><label>Status</label><select id="filterColor"><option value="">Todos</option>
+<option value="missing">Fora plataformas</option><option value="value_diff">Divergência valor</option>
+<option value="no_payment">Sem pagamento</option><option value="refund">Estorno/Refund</option>
+<option value="pending">Pendentes</option><option value="no_nf">Sem NF Produto</option>
+<option value="canceled">Cancelado</option><option value="pj_extra">PJ extra</option><option value="ok">OK</option></select></div>
+<div class="filter-group"><label>Tipo</label><select id="filterTipo"><option value="">Todos</option><option value="CPF">CPF</option><option value="CNPJ">CNPJ</option></select></div>
+<div class="filter-group"><label>Produto</label><select id="filterProd"><option value="">Todos</option></select></div>
+<div class="filter-group"><label>Vendedor</label><select id="filterVend"><option value="">Todos</option></select></div>
+<div class="filter-group"><label>NF Produto</label><select id="filterNFP"><option value="">Todos</option><option value="Enviada">Enviada</option><option value="Nao Precisa">Não Precisa</option><option value="Não Enviada">Não Enviada</option></select></div>
+</div>
+<div class="filter-actions">
+<button class="btn" onclick="clearFilters()">Limpar</button>
+<button class="btn" style="border-color:#881337;color:#881337" onclick="sf('filterColor','value_diff')">Divergências (982)</button>
+<button class="btn" style="border-color:#dc2626;color:#dc2626" onclick="sf('filterColor','missing')">Fora plataformas (58)</button>
+<button class="btn" style="border-color:#854d0e;color:#854d0e" onclick="sf('filterColor','no_nf')">Sem NF Prod (134)</button>
+<span id="count"></span>
+</div>
+</div>
+<div class="table-wrap"><div class="table-scroll"><table><thead><tr>
+<th onclick="sortTable(0)">Nome</th><th>Doc</th><th>Tipo</th><th onclick="sortTable(1)">Data</th>
+<th>Produto</th><th onclick="sortTable(2)">Val Total</th><th>Val Prod</th><th>Val Serv</th>
+<th>NF P</th><th>NF S</th><th>Vindi</th><th>Omie</th><th>Atraso</th><th onclick="sortTable(3)">Status</th>
+</tr></thead><tbody id="tbody"></tbody></table></div></div>
+</div>
+<div class="modal-bg" id="modal-bg" onclick="closeModal()">
+<div class="modal" onclick="event.stopPropagation()">
+<span class="modal-close" onclick="closeModal()">&times;</span>
+<h2 id="modal-title"></h2><div id="modal-body"></div>
+</div></div>
+<script src="vendas_cross_data.js"></script>
+<script>
+function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtK(v){return Math.abs(v)>=1e3?"R$ "+(v/1e3).toFixed(1)+"k":fmt(v)}
+function sf(id,val){document.getElementById(id).value=val;render()}
+function clearFilters(){["search"].forEach(function(id){document.getElementById(id).value=""});["filterColor","filterTipo","filterProd","filterVend","filterNFP"].forEach(function(id){document.getElementById(id).value=""});render()}
+
+var prods={},vends={};data.forEach(function(d){if(d.p)prods[d.p]=1;if(d.vd)vends[d.vd]=1});
+var ps=document.getElementById("filterProd");Object.keys(prods).sort().forEach(function(p){var o=document.createElement("option");o.value=p;o.textContent=p;ps.appendChild(o)});
+var vs=document.getElementById("filterVend");Object.keys(vends).sort().forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;vs.appendChild(o)});
+
+var stats={};data.forEach(function(d){if(!stats[d.c])stats[d.c]={n:0,t:0};stats[d.c].n++;stats[d.c].t+=d.vt});
+var cds=[{id:"ok",l:"OK",b:"#059669"},{id:"value_diff",l:"Divergência valor",b:"#e11d48"},{id:"canceled",l:"Cancelados",b:"#7c3aed"},{id:"pending",l:"Pendentes",b:"#f59e0b"},{id:"no_nf",l:"Sem NF Prod",b:"#eab308"},{id:"missing",l:"Fora plataformas",b:"#dc2626"},{id:"refund",l:"Estorno/Refund",b:"#ec4899"},{id:"no_payment",l:"Sem pagamento",b:"#dc2626"},{id:"pj_extra",l:"PJ extra",b:"#2563eb"}];
+var ch="";cds.forEach(function(cd){var s=stats[cd.id]||{n:0,t:0};if(s.n===0)return;ch+='<div class="card" style="border-left-color:'+cd.b+'" onclick="sf(\'filterColor\',\''+cd.id+'\')"><h3>'+cd.l+'</h3><div class="value">'+s.n+'</div><div class="sub">'+fmtK(s.t)+'</div></div>'});
+document.getElementById("cards-container").innerHTML=ch;
+
+function openModal(idx){
+    var d=data[idx];
+    document.getElementById("modal-title").textContent=d.n;
+    var h='<div class="mr"><span class="lbl">CPF/CNPJ</span><span class="val">'+d.d+' ('+d.td+')</span></div>';
+    h+='<div class="mr"><span class="lbl">Data venda</span><span class="val">'+d.dv+'</span></div>';
+    h+='<div class="mr"><span class="lbl">Produto</span><span class="val">'+d.p+(d.nv?' — '+d.nv:'')+'</span></div>';
+    h+='<div class="mr"><span class="lbl">Forma / Parcelas</span><span class="val">'+d.f+(d.parc?' ('+d.parc+'x)':'')+'</span></div>';
+    h+='<div class="mr"><span class="lbl">Vendedor</span><span class="val">'+d.vd+'</span></div>';
+    if(d.desc>0)h+='<div class="mr"><span class="lbl">Desconto</span><span class="val">'+d.desc+'%</span></div>';
+
+    h+='<div class="st">Valores da Planilha</div>';
+    h+='<div class="mr"><span class="lbl">Valor Total</span><span class="val">'+fmt(d.vt)+'</span></div>';
+    h+='<div class="mr"><span class="lbl">Valor Produto</span><span class="val">'+fmt(d.vpr)+'</span></div>';
+    h+='<div class="mr"><span class="lbl">Valor Serviço</span><span class="val">'+fmt(d.vs)+'</span></div>';
+    h+='<div class="mr"><span class="lbl">NF Produto</span><span class="val">'+d.nfp+'</span></div>';
+    h+='<div class="mr"><span class="lbl">NF Serviço</span><span class="val">'+d.nfs+'</span></div>';
+
+    h+='<div class="st">Comparativo: Planilha vs Plataformas</div>';
+    h+='<div class="comp-row header"><span>Item</span><span>Planilha</span><span>Plataforma</span><span>Diferença</span></div>';
+    var vc=d.dv_val!==null?(Math.abs(d.dv_val)<50?'diff-ok':'diff-bad'):'';
+    h+='<div class="comp-row"><span>Total vs Vindi pago</span><span>'+fmt(d.vt)+'</span><span>'+fmt(d.vpt)+'</span><span class="'+vc+'">'+(d.dv_val!==null?fmt(d.dv_val):'—')+'</span></div>';
+    var sc=d.do_s!==null?(Math.abs(d.do_s)<50?'diff-ok':'diff-bad'):'';
+    h+='<div class="comp-row"><span>Serviço vs Omie NFS-e</span><span>'+fmt(d.vs)+'</span><span>'+fmt(d.ost)+'</span><span class="'+sc+'">'+(d.do_s!==null?fmt(d.do_s):'—')+'</span></div>';
+    var pc=d.do_p!==null?(Math.abs(d.do_p)<50?'diff-ok':'diff-bad'):'';
+    h+='<div class="comp-row"><span>Produto vs Omie Pedidos</span><span>'+fmt(d.vpr)+'</span><span>'+fmt(d.opt)+'</span><span class="'+pc+'">'+(d.do_p!==null?fmt(d.do_p):'—')+'</span></div>';
+
+    h+='<div class="st">Presença nas Plataformas</div>';
+    h+='<div class="mr"><span class="lbl">Vindi</span><span class="val '+(d.iv?'ok':'bad')+'">'+(d.iv?'SIM — '+d.vpc+' faturas pagas ('+fmt(d.vpt)+')':'NÃO ENCONTRADO')+'</span></div>';
+    if(d.vpnc>0){h+='<div class="mr"><span class="lbl">Vindi Pendentes</span><span class="val bad">'+d.vpnc+' faturas | '+fmt(d.vpnt)+'</span></div>';
+    if(d.ovd>0)h+='<div class="mr"><span class="lbl">Atrasadas</span><span class="val bad">'+d.ovd+' faturas | '+fmt(d.ovt)+'</span></div>';
+    if(d.pnd&&d.pnd.length>0){h+='<div style="margin:6px 0;max-height:150px;overflow-y:auto">';d.pnd.forEach(function(p){var isLate=p.due&&p.due<"2026-05-10";h+='<div style="display:flex;justify-content:space-between;padding:3px 8px;font-size:11px;background:'+(isLate?"#fef2f2":"#fffbeb")+';margin:2px 0;border-radius:4px"><span>'+(isLate?"&#9888; ":"")+'Venc: '+p.due+'</span><span style="font-weight:600;color:'+(isLate?"#dc2626":"#d97706")+'">'+fmt(p.amount)+'</span></div>'});h+='</div>'}
+    }
+    h+='<div class="mr"><span class="lbl">Omie</span><span class="val '+(d.io?'ok':'bad')+'">'+(d.io?'SIM — '+d.osc+' NFS-e + '+d.opc+' Pedidos':'NÃO ENCONTRADO')+'</span></div>';
+    if(d.rec_esperado>0){
+        h+='<div class="st">Recorrência</div>';
+        var pct=d.rec_pago/d.rec_esperado*100;
+        var barColor=pct>=100?'#059669':pct>=50?'#d97706':'#dc2626';
+        h+='<div class="mr"><span class="lbl">Progresso</span><span class="val">'+d.rec_pago+' de '+d.rec_esperado+' parcelas ('+Math.round(pct)+'%)</span></div>';
+        h+='<div style="height:8px;background:#e5e7eb;border-radius:4px;margin:4px 0"><div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+barColor+';border-radius:4px"></div></div>';
+        if(d.vpnc>0)h+='<div class="mr"><span class="lbl">Pendentes Vindi</span><span class="val bad">'+d.vpnc+' faturas | '+fmt(d.vpnt)+'</span></div>';
+        if(d.ovd>0)h+='<div class="mr"><span class="lbl">Atrasadas</span><span class="val bad">'+d.ovd+' faturas | '+fmt(d.ovt)+'</span></div>';
+        if(d.rec_falta>0)h+='<div class="mr"><span class="lbl">Faltam emitir</span><span class="val warn">'+d.rec_falta+' parcelas</span></div>';
+    }
+
+    if(d.ic||d.ie||d.dc){
+        h+='<div class="st" style="color:#7c3aed">Cancelamento / Estorno</div>';
+        if(d.ic)h+='<div class="mr"><span class="lbl">Na aba Cancelamentos</span><span class="val bad">SIM</span></div>';
+        if(d.ie)h+='<div class="mr"><span class="lbl">Na aba Estornos</span><span class="val bad">SIM — '+d.epc+'x R$ '+d.epi.toLocaleString("pt-BR")+'</span></div>';
+        if(d.dc)h+='<div class="mr"><span class="lbl">Data cancelamento</span><span class="val">'+d.dc+'</span></div>';
+        if(d.tc&&d.tc!=='-')h+='<div class="mr"><span class="lbl">Tipo</span><span class="val">'+d.tc+'</span></div>';
+        if(d.rc&&d.rc!=='-')h+='<div class="mr"><span class="lbl">Razão</span><span class="val">'+d.rc+'</span></div>';
+        if(d.mul>0)h+='<div class="mr"><span class="lbl">Multa</span><span class="val">'+fmt(d.mul)+'</span></div>';
+        if(d.pac>0)h+='<div class="mr"><span class="lbl">Pago até cancelamento</span><span class="val">'+fmt(d.pac)+'</span></div>';
+        if(d.prd>0)h+='<div class="mr"><span class="lbl">Perda</span><span class="val bad">'+fmt(d.prd)+'</span></div>';
+    }
+    if(d.rfc>0){h+='<div class="st" style="color:#ec4899">Estornos Pagar.me</div>';h+='<div class="mr"><span class="lbl">Refunds</span><span class="val bad">'+d.rfc+'x | '+fmt(d.rft)+'</span></div>'}
+
+    h+='<div class="st">Status Final</div>';
+    h+='<div class="mr"><span class="lbl">Flags</span><span class="tag tag-'+d.c+'">'+d.fl+'</span></div>';
+    if(d.vfl)h+='<div class="mr"><span class="lbl">Divergências valor</span><span class="val bad">'+d.vfl+'</span></div>';
+    document.getElementById("modal-body").innerHTML=h;
+    document.getElementById("modal-bg").classList.add("show");
+}
+function closeModal(){document.getElementById("modal-bg").classList.remove("show")}
+
+function render(){
+    var search=document.getElementById("search").value.toLowerCase();
+    var color=document.getElementById("filterColor").value;
+    var tipo=document.getElementById("filterTipo").value;
+    var prod=document.getElementById("filterProd").value;
+    var vend=document.getElementById("filterVend").value;
+    var nfp=document.getElementById("filterNFP").value;
+    var filtered=[];
+    for(var i=0;i<data.length;i++){var d=data[i];
+        if(search&&d.n.toLowerCase().indexOf(search)===-1&&d.d.indexOf(search)===-1&&d.p.toLowerCase().indexOf(search)===-1)continue;
+        if(color&&d.c!==color)continue;if(tipo&&d.td!==tipo)continue;
+        if(prod&&d.p!==prod)continue;if(vend&&d.vd!==vend)continue;
+        if(nfp&&d.nfp!==nfp)continue;
+        filtered.push({d:d,idx:i})}
+    document.getElementById("count").textContent=filtered.length+" de "+data.length;
+    var rows=[],limit=Math.min(filtered.length,500);
+    for(var i=0;i<limit;i++){var d=filtered[i].d,idx=filtered[i].idx;
+        var vi=d.iv?'<span class="check">&#10003;</span>':'<span class="cross">&#10007;</span>';
+        var oi=d.io?'<span class="check">&#10003;</span>':'<span class="cross">&#10007;</span>';
+        if(d.vpc>0)vi+=' '+d.vpc+'pg';if(d.osc>0)oi+=' '+d.osc+'nf';
+        rows.push('<tr class="c-'+d.c+'" onclick="openModal('+idx+')"><td><strong>'+d.n+'</strong></td><td style="font-size:8px">'+d.d+'</td><td>'+d.td+'</td><td style="white-space:nowrap;font-size:9px">'+d.dv+'</td><td style="font-size:9px">'+d.p+'</td><td class="vc">'+fmt(d.vt)+'</td><td class="vc" style="color:#2563eb">'+fmt(d.vpr)+'</td><td class="vc" style="color:#059669">'+fmt(d.vs)+'</td><td style="font-size:8px">'+d.nfp+'</td><td style="font-size:8px">'+d.nfs+'</td><td style="font-size:8px">'+vi+'</td><td style="font-size:8px">'+oi+'</td><td style="font-size:9px">'+(d.ovd>0?'<span style="color:#dc2626;font-weight:700">'+d.ovd+' atr ('+fmtK(d.ovt)+')</span>':d.vpnc>0?'<span style="color:#d97706">'+d.vpnc+' pend</span>':d.rec_esperado>0?'<span style="color:'+(d.rec_pago>=d.rec_esperado?'#059669':'#6b7280')+'">'+d.rec_pago+'/'+d.rec_esperado+'</span>':'-')+'</td><td><span class="tag tag-'+d.c+'">'+d.fl.substring(0,40)+'</span></td></tr>')}
+    if(filtered.length>500)rows.push('<tr><td colspan="14" style="text-align:center;color:#6b7280;padding:10px">Mostrando 500 de '+filtered.length+'</td></tr>');
+    // Also update colspan
+
+    document.getElementById("tbody").innerHTML=rows.join("")}
+
+["search"].forEach(function(id){document.getElementById(id).addEventListener("input",render)});
+["filterColor","filterTipo","filterProd","filterVend","filterNFP"].forEach(function(id){document.getElementById(id).addEventListener("change",render)});
+var sortCol=-1,sortAsc=true;
+function sortTable(col){if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true};var keys=["n","dv","vt","c"];data.sort(function(a,b){var va=a[keys[col]],vb=b[keys[col]];if(typeof va==="number")return sortAsc?va-vb:vb-va;return sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va))});render()}
+render();
+</script>
+</body>
+</html>

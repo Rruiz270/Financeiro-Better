@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receitas Better 2024-2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f2f5;color:#1a1a2e}
+.header{background:linear-gradient(135deg,#059669,#047857);color:white;padding:24px 40px;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:24px}.header p{opacity:0.85;font-size:13px;margin-top:2px}
+.nav{display:flex;gap:6px}
+.nav-btn{padding:8px 14px;border-radius:8px;border:2px solid rgba(255,255,255,0.3);background:transparent;color:white;font-size:12px;font-weight:600;cursor:pointer}
+.nav-btn:hover,.nav-btn.active{background:white;color:#059669;border-color:white}
+.container{max-width:1500px;margin:0 auto;padding:20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:14px 0}
+.card{background:white;border-radius:10px;padding:14px;box-shadow:0 2px 6px rgba(0,0,0,0.07);border-left:4px solid #059669;cursor:pointer}
+.card:hover{transform:translateY(-1px)}.card h3{font-size:9px;text-transform:uppercase;color:#6b7280;margin-bottom:3px}
+.card .value{font-size:15px;font-weight:700;color:#1f2937}.card .sub{font-size:9px;color:#9ca3af;margin-top:2px}
+.card.est{border-left-color:#ec4899}.card.pend{border-left-color:#f59e0b}
+.filters-section{background:white;border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:8px}
+.filter-group{display:flex;flex-direction:column;gap:2px}
+.filter-group label{font-size:9px;font-weight:700;text-transform:uppercase;color:#6b7280}
+.filter-group input,.filter-group select{padding:7px 9px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;outline:none;background:#fafafa}
+.filter-actions{display:flex;gap:8px;align-items:center}
+.btn{padding:6px 12px;border:1.5px solid #e5e7eb;border-radius:7px;background:white;font-size:11px;cursor:pointer}
+.btn:hover{border-color:#059669;color:#059669}
+#count{font-size:10px;color:#6b7280;margin-left:auto}
+.totals-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.tc{border-radius:8px;padding:9px 12px;flex:1;min-width:130px}
+.tc.green{background:#ecfdf5;border:1px solid #a7f3d0}.tc.green .label{color:#065f46}.tc.green .amount{color:#059669}
+.tc.pink{background:#fdf2f8;border:1px solid #fbcfe8}.tc.pink .label{color:#9d174d}.tc.pink .amount{color:#ec4899}
+.tc .label{font-size:8px;text-transform:uppercase;font-weight:600}
+.tc .amount{font-size:17px;font-weight:700;margin-top:2px}
+.breakdown{background:white;border-radius:12px;padding:14px;margin:12px 0;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.breakdown h3{font-size:12px;color:#374151;margin-bottom:8px}
+.breakdown-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:4px;max-height:220px;overflow-y:auto}
+.breakdown-item{display:flex;justify-content:space-between;padding:5px 8px;border-radius:4px;background:#f9fafb;cursor:pointer;font-size:11px}
+.breakdown-item:hover{background:#ecfdf5}
+.breakdown-item .val{font-weight:700;color:#059669}
+.table-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-top:14px}
+.table-scroll{max-height:550px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead{background:#f9fafb;position:sticky;top:0;z-index:10}
+th{padding:8px 6px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;cursor:pointer;font-size:10px;white-space:nowrap}
+th:hover{background:#f3f4f6}
+td{padding:6px;border-bottom:1px solid #f3f4f6}
+tr:hover{background:#ecfdf5}
+tr.estorno{background:#fdf2f8}tr.estorno:hover{background:#fce7f3}
+tr.pendente{background:#fffbeb}tr.pendente:hover{background:#fef3c7}
+.vc{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:#059669}
+.vc.neg{color:#ec4899}
+</style>
+</head>
+<body>
+<div class="header">
+<div><h1>Receitas Better</h1><p>Fonte: Vindi (recorr&ecirc;ncia) + Pagar.me (estornos) | 2024-2026</p></div>
+<div class="nav">
+<button class="nav-btn active" onclick="setYear('',this)">Todos</button>
+<button class="nav-btn" onclick="setYear('2024',this)">2024</button>
+<button class="nav-btn" onclick="setYear('2025',this)">2025</button>
+<button class="nav-btn" onclick="setYear('2026',this)">2026</button>
+</div>
+</div>
+<div class="container">
+<div class="cards" id="cards-container"></div>
+<div class="filters-section">
+<div class="filter-grid">
+<div class="filter-group"><label>Busca</label><input type="text" id="search" placeholder="Cliente, categoria..."></div>
+<div class="filter-group"><label>Ano</label><select id="filterAno"><option value="">Todos</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option></select></div>
+<div class="filter-group"><label>M&ecirc;s</label><select id="filterMes"><option value="">Todos</option></select></div>
+<div class="filter-group"><label>Status</label><select id="filterStatus"><option value="">Todos</option><option value="Pago">Pago</option><option value="Pendente">Pendente</option><option value="Estorno">Estorno</option></select></div>
+<div class="filter-group"><label>Valor M&iacute;n.</label><input type="number" id="filterMin" placeholder=""></div>
+<div class="filter-group"><label>Valor M&aacute;x.</label><input type="number" id="filterMax" placeholder=""></div>
+</div>
+<div class="filter-actions">
+<button class="btn" onclick="clearFilters()">Limpar</button>
+<button class="btn" style="border-color:#ec4899;color:#ec4899" onclick="document.getElementById('filterStatus').value='Estorno';render()">Estornos</button>
+<button class="btn" style="border-color:#f59e0b;color:#f59e0b" onclick="document.getElementById('filterStatus').value='Pendente';render()">Pendentes</button>
+<span id="count"></span>
+</div>
+</div>
+<div class="totals-row">
+<div class="tc green"><div class="label">Total Filtrado</div><div class="amount" id="total-val">R$ 0</div></div>
+<div class="tc green"><div class="label">Registros</div><div class="amount" id="total-count" style="color:#374151;font-size:15px">0</div></div>
+<div class="tc green"><div class="label">M&eacute;dia</div><div class="amount" id="total-avg" style="font-size:13px;color:#6b7280">R$ 0</div></div>
+<div class="tc pink"><div class="label">Estornos no filtro</div><div class="amount" id="total-est">R$ 0</div></div>
+</div>
+<div class="breakdown"><h3>Detalhamento por Cliente</h3><div class="breakdown-grid" id="breakdown-grid"></div></div>
+<div class="table-wrap"><div class="table-scroll"><table><thead><tr>
+<th onclick="sortTable(0)" id="th0">Data</th>
+<th onclick="sortTable(1)" id="th1">Cliente</th>
+<th onclick="sortTable(2)" id="th2">Categoria</th>
+<th onclick="sortTable(3)" id="th3">M&ecirc;s</th>
+<th onclick="sortTable(4)" id="th4">Valor</th>
+<th onclick="sortTable(5)" id="th5">Status</th>
+</tr></thead><tbody id="tbody"></tbody></table></div></div>
+</div>
+<script src="receitas_all_data.js"></script>
+<script>
+function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtK(v){return Math.abs(v)>=1e6?"R$ "+(v/1e6).toFixed(2)+"M":Math.abs(v)>=1e3?"R$ "+(v/1e3).toFixed(1)+"k":fmt(v)}
+
+var allMeses={};data.forEach(function(d){allMeses[d.mes]=1});
+var mSel=document.getElementById("filterMes");
+Object.keys(allMeses).sort().forEach(function(m){var o=document.createElement("option");o.value=m;o.textContent=m;mSel.appendChild(o)});
+
+// Cards
+var byYear={};var estByYear={};var pendByYear={};
+data.forEach(function(d){
+    if(!byYear[d.ano])byYear[d.ano]={t:0,n:0};
+    if(!estByYear[d.ano])estByYear[d.ano]={t:0,n:0};
+    if(!pendByYear[d.ano])pendByYear[d.ano]={t:0,n:0};
+    if(d.situacao==="Estorno"){estByYear[d.ano].t+=Math.abs(d.valor);estByYear[d.ano].n++}
+    else if(d.situacao==="Pendente"){pendByYear[d.ano].t+=d.valor;pendByYear[d.ano].n++}
+    else{byYear[d.ano].t+=d.valor;byYear[d.ano].n++}
+});
+var ch="";
+["2024","2025","2026"].forEach(function(y){var d=byYear[y]||{t:0,n:0};ch+='<div class="card" onclick="setYear(\''+y+'\',document.querySelectorAll(\'.nav-btn\')['+(['2024','2025','2026'].indexOf(y)+1)+'])"><h3>Receitas '+y+'</h3><div class="value">'+fmtK(d.t)+'</div><div class="sub">'+d.n+' faturas</div></div>'});
+["2024","2025","2026"].forEach(function(y){var d=estByYear[y]||{t:0,n:0};if(d.n>0)ch+='<div class="card est"><h3>Estornos '+y+'</h3><div class="value">'+fmtK(d.t)+'</div><div class="sub">'+d.n+' ops</div></div>'});
+var pAll=pendByYear["2024"]||{t:0,n:0};["2025","2026"].forEach(function(y){var p=pendByYear[y]||{t:0,n:0};pAll.t+=p.t;pAll.n+=p.n});
+if(pAll.n>0)ch+='<div class="card pend"><h3>Pendentes Total</h3><div class="value">'+fmtK(pAll.t)+'</div><div class="sub">'+pAll.n+' faturas</div></div>';
+document.getElementById("cards-container").innerHTML=ch;
+
+var currentYear="";
+function setYear(y,btn){currentYear=y;document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});if(btn)btn.classList.add("active");document.getElementById("filterAno").value=y;render()}
+function clearFilters(){["search","filterMin","filterMax"].forEach(function(id){document.getElementById(id).value=""});["filterAno","filterMes","filterStatus"].forEach(function(id){document.getElementById(id).value=""});currentYear="";document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});document.querySelector(".nav-btn").classList.add("active");render()}
+
+function render(){
+    var search=document.getElementById("search").value.toLowerCase();
+    var ano=document.getElementById("filterAno").value||currentYear;
+    var mes=document.getElementById("filterMes").value;
+    var status=document.getElementById("filterStatus").value;
+    var minV=parseFloat(document.getElementById("filterMin").value)||-Infinity;
+    var maxStr=document.getElementById("filterMax").value;var maxV=maxStr?parseFloat(maxStr):Infinity;
+
+    var filtered=[];
+    for(var i=0;i<data.length;i++){var d=data[i];
+        if(search&&d.cliente.toLowerCase().indexOf(search)===-1&&d.categoria.toLowerCase().indexOf(search)===-1)continue;
+        if(ano&&d.ano!==ano)continue;if(mes&&d.mes!==mes)continue;
+        if(status&&d.situacao!==status)continue;
+        if(d.valor<minV||d.valor>maxV)continue;
+        filtered.push(d)}
+
+    var total=0,estTotal=0;
+    filtered.forEach(function(d){total+=d.valor;if(d.situacao==="Estorno")estTotal+=d.valor});
+    document.getElementById("total-val").textContent=fmt(total);
+    document.getElementById("total-count").textContent=filtered.length;
+    document.getElementById("total-avg").textContent=filtered.length>0?fmt(total/filtered.length):"R$ 0,00";
+    document.getElementById("total-est").textContent=fmt(Math.abs(estTotal));
+    document.getElementById("count").textContent=filtered.length+" de "+data.length;
+
+    var cb={};filtered.forEach(function(d){if(d.valor>0){cb[d.cliente]=(cb[d.cliente]||0)+d.valor}});
+    var cbs=Object.entries(cb).sort(function(a,b){return b[1]-a[1]});
+    document.getElementById("breakdown-grid").innerHTML=cbs.slice(0,30).map(function(e){
+        return '<div class="breakdown-item" onclick="document.getElementById(\'search\').value=\''+e[0].substring(0,20)+'\';render()"><span>'+e[0].substring(0,35)+'</span><span class="val">'+fmtK(e[1])+'</span></div>'}).join("");
+
+    var rows=[],limit=Math.min(filtered.length,500);
+    for(var i=0;i<limit;i++){var d=filtered[i];
+        var rc=d.situacao==="Estorno"?"estorno":d.situacao==="Pendente"?"pendente":"";
+        var vc=d.valor<0?"vc neg":"vc";
+        rows.push("<tr class='"+rc+"'><td style='white-space:nowrap'>"+d.data+"</td><td><strong>"+d.cliente+"</strong></td><td>"+d.categoria+"</td><td>"+d.mes+"</td><td class='"+vc+"'>"+fmt(d.valor)+"</td><td>"+d.situacao+"</td></tr>")}
+    if(filtered.length>500)rows.push("<tr><td colspan='6' style='text-align:center;color:#6b7280;padding:12px'>Mostrando 500 de "+filtered.length+"</td></tr>");
+    document.getElementById("tbody").innerHTML=rows.join("")}
+
+["search","filterMin","filterMax"].forEach(function(id){document.getElementById(id).addEventListener("input",render)});
+["filterAno","filterMes","filterStatus"].forEach(function(id){document.getElementById(id).addEventListener("change",render)});
+
+var sortCol=-1,sortAsc=true;
+function sortTable(col){
+    document.querySelectorAll("th").forEach(function(t){t.className=t.className.replace(/sorted-\w+/g,"")});
+    if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true}
+    var keys=["data","cliente","categoria","mes","valor","situacao"];
+    data.sort(function(a,b){var va=a[keys[col]],vb=b[keys[col]];if(typeof va==="number")return sortAsc?va-vb:vb-va;return sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va))});render()}
+render();
+</script>
+</body>
+</html>

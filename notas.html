@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notas Produto vs Servico vs Faltantes</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f2f5}
+.header{background:linear-gradient(135deg,#4f46e5,#3730a3);color:white;padding:24px 40px}
+.header h1{font-size:22px;margin-bottom:4px}.header p{opacity:0.85;font-size:13px}
+.container{max-width:1500px;margin:0 auto;padding:20px}
+.legend{background:white;border-radius:10px;padding:12px 18px;margin:14px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.07)}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px}
+.legend-dot{width:12px;height:12px;border-radius:3px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:14px 0}
+.card{background:white;border-radius:10px;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,0.07);border-left:4px solid #ccc;cursor:pointer}
+.card:hover{transform:translateY(-1px)}
+.card h3{font-size:8px;text-transform:uppercase;color:#6b7280;margin-bottom:2px}
+.card .value{font-size:16px;font-weight:700}.card .sub{font-size:9px;color:#9ca3af;margin-top:2px}
+.filters-section{background:white;border-radius:12px;padding:16px;margin:14px 0;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:8px}
+.filter-group{display:flex;flex-direction:column;gap:2px}
+.filter-group label{font-size:9px;font-weight:700;text-transform:uppercase;color:#6b7280}
+.filter-group input,.filter-group select{padding:7px 9px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;outline:none;background:#fafafa}
+.filter-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.btn{padding:5px 10px;border:1.5px solid #e5e7eb;border-radius:7px;background:white;font-size:10px;cursor:pointer}
+.btn:hover{border-color:#4f46e5}
+#count{font-size:10px;color:#6b7280;margin-left:auto}
+.totals-row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.tc{border-radius:8px;padding:8px 12px;flex:1;min-width:120px}
+.tc .label{font-size:8px;text-transform:uppercase;font-weight:600}
+.tc .amount{font-size:16px;font-weight:700;margin-top:2px}
+.table-wrap{background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-top:14px}
+.table-scroll{max-height:600px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead{background:#f9fafb;position:sticky;top:0;z-index:10}
+th{padding:8px 5px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;cursor:pointer;white-space:nowrap;font-size:10px}
+th:hover{background:#f3f4f6}
+td{padding:6px 5px;border-bottom:1px solid #f3f4f6}
+.vc{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+tr.c-ok{background:#f0fdf4}tr.c-ok:hover{background:#dcfce7}
+tr.c-ok_recurrence{background:#eff6ff}tr.c-ok_recurrence:hover{background:#dbeafe}
+tr.c-no_product{background:#fef9c3}tr.c-no_product:hover{background:#fef08a}
+tr.c-no_service{background:#fef3c7}tr.c-no_service:hover{background:#fde68a}
+tr.c-warning{background:#fff7ed}tr.c-warning:hover{background:#ffedd5}
+tr.c-overdue{background:#fef2f2}tr.c-overdue:hover{background:#fee2e2}
+tr.c-canceled{background:#f3e8ff}tr.c-canceled:hover{background:#e9d5ff}
+tr.c-refund{background:#fce7f3}tr.c-refund:hover{background:#fbcfe8}
+tr.c-chargeback{background:#fecdd3}tr.c-chargeback:hover{background:#fda4af}
+.tag{display:inline-block;padding:2px 5px;border-radius:10px;font-size:8px;font-weight:600;white-space:nowrap}
+.tag-ok{background:#d1fae5;color:#065f46}.tag-ok_recurrence{background:#bfdbfe;color:#1e40af}
+.tag-no_product{background:#fef08a;color:#854d0e}.tag-no_service{background:#fde68a;color:#92400e}
+.tag-warning{background:#fed7aa;color:#9a3412}.tag-overdue{background:#fecaca;color:#991b1b}
+.tag-canceled{background:#e9d5ff;color:#6b21a8}.tag-refund{background:#fbcfe8;color:#9d174d}
+.tag-chargeback{background:#fda4af;color:#881337}
+.tag-cpf{background:#eff6ff;color:#1e40af}.tag-cnpj{background:#fef3c7;color:#92400e}
+.bar-ct{width:60px;height:6px;background:#e5e7eb;border-radius:3px;display:inline-block;vertical-align:middle;overflow:hidden}
+.bar-s{height:100%;background:#059669;float:left}.bar-p{height:100%;background:#2563eb;float:left}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100}
+.modal-bg.show{display:flex;align-items:center;justify-content:center}
+.modal{background:white;border-radius:12px;padding:24px;max-width:750px;width:95%;max-height:85vh;overflow-y:auto}
+.modal h2{font-size:18px;margin-bottom:12px}.modal-close{float:right;cursor:pointer;font-size:20px;color:#6b7280}
+.mr{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f3f4f6;font-size:12px}
+.mr .lbl{color:#6b7280}.mr .val{font-weight:600}
+.bill-list{margin:8px 0;max-height:200px;overflow-y:auto}
+.bill-item{display:flex;justify-content:space-between;padding:4px 8px;font-size:11px;border-bottom:1px solid #f9fafb}
+.bill-item.paid{background:#f0fdf4}.bill-item.pending{background:#fef2f2}.bill-item.refund{background:#fce7f3}.bill-item.chargeback{background:#fecdd3}
+.section-title{font-size:13px;font-weight:700;margin:12px 0 6px;padding-top:8px;border-top:1px solid #e5e7eb}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>Notas Produto vs Servi&ccedil;o vs Faltantes</h1>
+<p>Cruzamento Omie + Vindi + Pagar.me | 2024-2026 | Clique no aluno para ver hist&oacute;rico completo</p>
+</div>
+<div class="container">
+<div class="legend">
+<strong style="font-size:10px">Legenda:</strong>
+<div class="legend-item"><div class="legend-dot" style="background:#d1fae5"></div>OK</div>
+<div class="legend-item"><div class="legend-dot" style="background:#bfdbfe"></div>Recorr&ecirc;ncia OK</div>
+<div class="legend-item"><div class="legend-dot" style="background:#fef08a"></div>Sem NF Produto</div>
+<div class="legend-item"><div class="legend-dot" style="background:#fde68a"></div>Sem NF Servi&ccedil;o</div>
+<div class="legend-item"><div class="legend-dot" style="background:#fed7aa"></div>Fora 50/50</div>
+<div class="legend-item"><div class="legend-dot" style="background:#fecaca"></div>Pendentes</div>
+<div class="legend-item"><div class="legend-dot" style="background:#e9d5ff"></div>Cancelado</div>
+<div class="legend-item"><div class="legend-dot" style="background:#fbcfe8"></div>Estorno</div>
+<div class="legend-item"><div class="legend-dot" style="background:#fda4af"></div>Chargeback</div>
+</div>
+<div class="cards" id="cards-container"></div>
+<div class="filters-section">
+<div class="filter-grid">
+<div class="filter-group"><label>Busca</label><input type="text" id="search" placeholder="Nome, CPF, CNPJ..."></div>
+<div class="filter-group"><label>Tipo</label><select id="filterTipo"><option value="">Todos</option><option value="CPF">CPF</option><option value="CNPJ">CNPJ</option></select></div>
+<div class="filter-group"><label>Ano</label><select id="filterAno"><option value="">Todos</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option></select></div>
+<div class="filter-group"><label>Status</label><select id="filterColor"><option value="">Todos</option><option value="chargeback">Chargeback</option><option value="refund">Estorno</option><option value="canceled">Cancelado</option><option value="overdue">Pendente</option><option value="no_product">Sem NF Produto</option><option value="no_service">Sem NF Servi&ccedil;o</option><option value="warning">Fora 50/50</option><option value="ok_recurrence">Recorr&ecirc;ncia OK</option><option value="ok">OK</option></select></div>
+<div class="filter-group"><label>Valor M&iacute;n.</label><input type="number" id="filterMin" placeholder=""></div>
+<div class="filter-group"><label>Valor M&aacute;x.</label><input type="number" id="filterMax" placeholder=""></div>
+</div>
+<div class="filter-actions">
+<button class="btn" onclick="clearFilters()">Limpar</button>
+<button class="btn" style="border-color:#e11d48;color:#e11d48" onclick="setFilter('filterColor','chargeback')">Chargebacks (17)</button>
+<button class="btn" style="border-color:#ec4899;color:#ec4899" onclick="setFilter('filterColor','refund')">Estornos (94)</button>
+<button class="btn" style="border-color:#dc2626;color:#dc2626" onclick="setFilter('filterColor','overdue')">Pendentes (296)</button>
+<button class="btn" style="border-color:#7c3aed;color:#7c3aed" onclick="setFilter('filterColor','canceled')">Cancelados (274)</button>
+<button class="btn" style="border-color:#854d0e;color:#854d0e" onclick="setFilter('filterColor','no_product')">Sem Produto (1073)</button>
+<span id="count"></span>
+</div>
+</div>
+<div class="totals-row">
+<div class="tc" style="background:#ecfdf5;border:1px solid #a7f3d0"><div class="label" style="color:#065f46">NFS-e (Servi&ccedil;o)</div><div class="amount" style="color:#059669" id="total-serv">R$ 0</div></div>
+<div class="tc" style="background:#eff6ff;border:1px solid #bfdbfe"><div class="label" style="color:#1e40af">Pedidos (Produto)</div><div class="amount" style="color:#2563eb" id="total-prod">R$ 0</div></div>
+<div class="tc" style="background:#fef2f2;border:1px solid #fecaca"><div class="label" style="color:#991b1b">Filtrados</div><div class="amount" style="color:#dc2626" id="total-flags">0</div></div>
+</div>
+<div class="table-wrap"><div class="table-scroll"><table><thead><tr>
+<th onclick="sortTable(0)" id="th0">Nome</th><th onclick="sortTable(1)" id="th1">Doc</th><th onclick="sortTable(2)" id="th2">Tipo</th><th onclick="sortTable(3)" id="th3">Ano</th>
+<th onclick="sortTable(4)" id="th4">Servi&ccedil;o</th><th>Qt</th><th onclick="sortTable(5)" id="th5">Produto</th><th>Qt</th>
+<th onclick="sortTable(6)" id="th6">Total</th><th>Split</th><th>Vindi</th><th onclick="sortTable(7)" id="th7">Status</th>
+</tr></thead><tbody id="tbody"></tbody></table></div></div>
+</div>
+<div class="modal-bg" id="modal-bg" onclick="closeModal()">
+<div class="modal" onclick="event.stopPropagation()">
+<span class="modal-close" onclick="closeModal()">&times;</span>
+<h2 id="modal-title"></h2>
+<div id="modal-body"></div>
+</div>
+</div>
+<script src="notas_data.js"></script>
+<script>
+function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtK(v){return v>=1000?"R$ "+(v/1000).toFixed(1)+"k":fmt(v)}
+function setFilter(id,val){document.getElementById(id).value=val;render()}
+function clearFilters(){["search","filterMin","filterMax"].forEach(function(id){document.getElementById(id).value=""});["filterTipo","filterAno","filterColor"].forEach(function(id){document.getElementById(id).value=""});render()}
+
+var stats={};data.forEach(function(d){if(!stats[d.c])stats[d.c]={count:0,total:0};stats[d.c].count++;stats[d.c].total+=d.tot});
+var cardDefs=[{id:"ok",l:"OK",b:"#059669"},{id:"ok_recurrence",l:"Recorr\u00eancia OK",b:"#2563eb"},{id:"no_product",l:"Sem NF Produto",b:"#eab308"},{id:"no_service",l:"Sem NF Servi\u00e7o",b:"#f59e0b"},{id:"warning",l:"Fora 50/50",b:"#f97316"},{id:"overdue",l:"Pendentes",b:"#dc2626"},{id:"canceled",l:"Cancelados",b:"#7c3aed"},{id:"refund",l:"Estornos",b:"#ec4899"},{id:"chargeback",l:"Chargebacks",b:"#e11d48"}];
+var ch="";cardDefs.forEach(function(cd){var s=stats[cd.id]||{count:0,total:0};if(s.count===0)return;ch+="<div class=\"card\" style=\"border-left-color:"+cd.b+"\" onclick=\"setFilter('filterColor','"+cd.id+"')\"><h3>"+cd.l+"</h3><div class=\"value\">"+s.count+"</div><div class=\"sub\">"+fmtK(s.total)+"</div></div>"});
+document.getElementById("cards-container").innerHTML=ch;
+
+function openModal(idx){
+    var d=data[idx];
+    document.getElementById("modal-title").textContent=d.n+" ("+d.d+")";
+    var h="";
+    h+="<div class=\"mr\"><span class=\"lbl\">Tipo</span><span class=\"val\">"+d.t+"</span></div>";
+    h+="<div class=\"mr\"><span class=\"lbl\">Ano</span><span class=\"val\">"+d.y+"</span></div>";
+    h+="<div class=\"mr\"><span class=\"lbl\">NFS-e (Servi\u00e7o)</span><span class=\"val\">"+fmt(d.sv)+" ("+d.sc+" notas)</span></div>";
+    h+="<div class=\"mr\"><span class=\"lbl\">Pedidos (Produto)</span><span class=\"val\">"+fmt(d.pv)+" ("+d.pc+" pedidos)</span></div>";
+    h+="<div class=\"mr\"><span class=\"lbl\">Split</span><span class=\"val\">Serv "+d.sp+"% / Prod "+d.pp+"%</span></div>";
+    h+="<div class=\"mr\"><span class=\"lbl\">Status</span><span class=\"tag tag-"+d.c+"\">"+d.cl+"</span></div>";
+
+    h+="<div class=\"section-title\">Vindi - Assinatura</div>";
+    h+="<div class=\"mr\"><span class=\"lbl\">Status</span><span class=\"val\">"+(d.ss||"N/A")+(d.spl?" ("+d.spl+")":"")+"</span></div>";
+    h+="<div class=\"mr\"><span class=\"lbl\">Faturas pagas</span><span class=\"val\">"+d.vp+" faturas | "+fmt(d.vpt)+"</span></div>";
+    h+="<div class=\"mr\"><span class=\"lbl\">Faturas pendentes</span><span class=\"val\" style=\"color:"+(d.vpn>0?"#dc2626":"#059669")+"\">"+d.vpn+" | "+fmt(d.vpnt)+"</span></div>";
+    h+="<div class=\"mr\"><span class=\"lbl\">Faturas canceladas</span><span class=\"val\">"+d.vc+"</span></div>";
+
+    if(d.pb&&d.pb.length>0){
+        h+="<div class=\"section-title\">\u00daltimas Faturas Pagas</div><div class=\"bill-list\">";
+        d.pb.forEach(function(b){h+="<div class=\"bill-item paid\"><span>"+b.date+"</span><span style=\"font-weight:600;color:#059669\">"+fmt(b.amount)+"</span></div>"});
+        h+="</div>";
+    }
+    if(d.pnb&&d.pnb.length>0){
+        h+="<div class=\"section-title\" style=\"color:#dc2626\">Faturas Pendentes</div><div class=\"bill-list\">";
+        d.pnb.forEach(function(b){h+="<div class=\"bill-item pending\"><span>Venc: "+b.due+"</span><span style=\"font-weight:600;color:#dc2626\">"+fmt(b.amount)+"</span></div>"});
+        h+="</div>";
+    }
+    if(d.rf&&d.rf.length>0){
+        h+="<div class=\"section-title\" style=\"color:#ec4899\">Estornos (Pagar.me)</div><div class=\"bill-list\">";
+        d.rf.forEach(function(r){h+="<div class=\"bill-item refund\"><span>"+r.date+"</span><span style=\"font-weight:600;color:#ec4899\">"+fmt(r.amount)+"</span></div>"});
+        h+="</div>";
+    }
+    if(d.cb&&d.cb.length>0){
+        h+="<div class=\"section-title\" style=\"color:#e11d48\">Chargebacks</div><div class=\"bill-list\">";
+        d.cb.forEach(function(c){h+="<div class=\"bill-item chargeback\"><span>"+c.date+"</span><span style=\"font-weight:600;color:#e11d48\">"+fmt(c.amount)+"</span></div>"});
+        h+="</div>";
+    }
+
+    document.getElementById("modal-body").innerHTML=h;
+    document.getElementById("modal-bg").classList.add("show");
+}
+function closeModal(){document.getElementById("modal-bg").classList.remove("show")}
+
+function render(){
+    var search=document.getElementById("search").value.toLowerCase();
+    var tipo=document.getElementById("filterTipo").value;
+    var ano=document.getElementById("filterAno").value;
+    var color=document.getElementById("filterColor").value;
+    var minV=parseFloat(document.getElementById("filterMin").value)||0;
+    var maxStr=document.getElementById("filterMax").value;
+    var maxV=maxStr?parseFloat(maxStr):Infinity;
+    var filtered=[];
+    for(var i=0;i<data.length;i++){var d=data[i];
+        if(search&&d.n.toLowerCase().indexOf(search)===-1&&d.d.indexOf(search)===-1)continue;
+        if(tipo&&d.t!==tipo)continue;if(ano&&d.y!==ano)continue;if(color&&d.c!==color)continue;
+        if(d.tot<minV||d.tot>maxV)continue;filtered.push({d:d,idx:i})}
+    var tS=0,tP=0;filtered.forEach(function(f){tS+=f.d.sv;tP+=f.d.pv});
+    document.getElementById("total-serv").textContent=fmt(tS);document.getElementById("total-prod").textContent=fmt(tP);
+    document.getElementById("total-flags").textContent=filtered.length;document.getElementById("count").textContent=filtered.length+" de "+data.length;
+    var rows=[],limit=Math.min(filtered.length,500);
+    for(var i=0;i<limit;i++){var d=filtered[i].d,idx=filtered[i].idx;
+        var tp=d.t==="CPF"?"<span class=\"tag tag-cpf\">CPF</span>":"<span class=\"tag tag-cnpj\">CNPJ</span>";
+        var bS=d.tot>0?(d.sv/d.tot*60):0,bP=d.tot>0?(d.pv/d.tot*60):0;
+        var bar="<div class=\"bar-ct\"><div class=\"bar-s\" style=\"width:"+bS+"px\"></div><div class=\"bar-p\" style=\"width:"+bP+"px\"></div></div> "+d.sp+"/"+d.pp;
+        var vi=d.vp+"pg";if(d.vpn>0)vi+=" <b style=\"color:#dc2626\">"+d.vpn+"pend</b>";if(d.rc>0)vi+=" <b style=\"color:#ec4899\">"+d.rc+"est</b>";if(d.cc>0)vi+=" <b style=\"color:#e11d48\">"+d.cc+"chb</b>";
+        rows.push("<tr class=\"c-"+d.c+"\" onclick=\"openModal("+idx+")\" style=\"cursor:pointer\"><td><strong>"+d.n+"</strong></td><td style=\"font-size:10px\">"+d.d+"</td><td>"+tp+"</td><td>"+d.y+"</td><td class=\"vc\" style=\"color:#059669\">"+fmt(d.sv)+"</td><td>"+d.sc+"</td><td class=\"vc\" style=\"color:#2563eb\">"+fmt(d.pv)+"</td><td>"+d.pc+"</td><td class=\"vc\">"+fmt(d.tot)+"</td><td style=\"font-size:9px;white-space:nowrap\">"+bar+"</td><td style=\"font-size:9px\">"+vi+"</td><td><span class=\"tag tag-"+d.c+"\">"+d.cl+"</span></td></tr>")}
+    if(filtered.length>500)rows.push("<tr><td colspan=\"12\" style=\"text-align:center;color:#6b7280;padding:12px\">Mostrando 500 de "+filtered.length+" - use filtros</td></tr>");
+    document.getElementById("tbody").innerHTML=rows.join("")}
+["search","filterMin","filterMax"].forEach(function(id){document.getElementById(id).addEventListener("input",render)});
+["filterTipo","filterAno","filterColor"].forEach(function(id){document.getElementById(id).addEventListener("change",render)});
+var sortCol=-1,sortAsc=true;
+function sortTable(col){var ths=document.querySelectorAll("th");for(var i=0;i<ths.length;i++)ths[i].className=ths[i].className.replace(/sorted-\w+/g,"");
+if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true}
+var keys=["n","d","t","y","sv","pv","tot","c"];data.sort(function(a,b){var va=a[keys[col]],vb=b[keys[col]];if(typeof va==="number")return sortAsc?va-vb:vb-va;return sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va))});render()}
+render();
+</script>
+</body>
+</html>
