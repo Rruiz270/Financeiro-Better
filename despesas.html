@@ -49,7 +49,7 @@ tr:hover{background:#fef2f2}
 </head>
 <body>
 <div class="header">
-<div><h1>Despesas Better</h1><p>Fonte: Omie Contas a Pagar | 2024-2026</p></div>
+<div><h1>Despesas Better</h1><p>Fonte: Omie Contas a Pagar + BMA Omie | 2024-2026</p></div>
 <div class="nav">
 <button class="nav-btn active" onclick="setYear('',this)">Todos</button>
 <button class="nav-btn" onclick="setYear('2024',this)">2024</button>
@@ -66,6 +66,7 @@ tr:hover{background:#fef2f2}
 <div class="filter-group"><label>M&ecirc;s</label><select id="filterMes"><option value="">Todos</option></select></div>
 <div class="filter-group"><label>Categoria</label><select id="filterCat"><option value="">Todas</option></select></div>
 <div class="filter-group"><label>Status</label><select id="filterStatus"><option value="">Todos</option><option value="PAGO">Pago</option><option value="A VENCER">A Vencer</option></select></div>
+<div class="filter-group"><label>Fonte</label><select id="filterFonte"><option value="">Todos</option><option value="Better">Better</option><option value="BMA">BMA</option></select></div>
 <div class="filter-group"><label>Valor M&iacute;n.</label><input type="number" id="filterMin" placeholder=""></div>
 <div class="filter-group"><label>Valor M&aacute;x.</label><input type="number" id="filterMax" placeholder=""></div>
 </div>
@@ -90,6 +91,7 @@ tr:hover{background:#fef2f2}
 <th onclick="sortTable(5)" id="th5">M&ecirc;s Pgto</th>
 <th onclick="sortTable(6)" id="th6">Valor</th>
 <th onclick="sortTable(7)" id="th7">Status</th>
+<th onclick="sortTable(8)" id="th8">Fonte</th>
 </tr></thead><tbody id="tbody"></tbody></table></div></div>
 </div>
 <script src="despesas_all_data.js"></script>
@@ -112,7 +114,7 @@ document.getElementById("cards-container").innerHTML=ch;
 
 var currentYear="";
 function setYear(y,btn){currentYear=y;document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});if(btn)btn.classList.add("active");document.getElementById("filterAno").value=y;render()}
-function clearFilters(){["search","filterMin","filterMax"].forEach(function(id){document.getElementById(id).value=""});["filterAno","filterMes","filterCat","filterStatus"].forEach(function(id){document.getElementById(id).value=""});currentYear="";document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});document.querySelector(".nav-btn").classList.add("active");render()}
+function clearFilters(){["search","filterMin","filterMax"].forEach(function(id){document.getElementById(id).value=""});["filterAno","filterMes","filterCat","filterStatus","filterFonte"].forEach(function(id){document.getElementById(id).value=""});currentYear="";document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});document.querySelector(".nav-btn").classList.add("active");render()}
 
 function render(){
     var search=document.getElementById("search").value.toLowerCase();
@@ -120,6 +122,7 @@ function render(){
     var mes=document.getElementById("filterMes").value;
     var cat=document.getElementById("filterCat").value;
     var status=document.getElementById("filterStatus").value;
+    var fonte=document.getElementById("filterFonte").value;
     var minV=parseFloat(document.getElementById("filterMin").value)||0;
     var maxStr=document.getElementById("filterMax").value;var maxV=maxStr?parseFloat(maxStr):Infinity;
 
@@ -127,7 +130,8 @@ function render(){
     for(var i=0;i<data.length;i++){var d=data[i];
         if(search&&d.fornecedor.toLowerCase().indexOf(search)===-1&&d.categoria.toLowerCase().indexOf(search)===-1)continue;
         if(ano&&d.ano!==ano)continue;if(mes&&d.mes!==mes)continue;if(cat&&d.categoria!==cat)continue;
-        if(status&&d.situacao!==status)continue;if(d.valor_pago<minV||d.valor_pago>maxV)continue;
+        if(status&&d.situacao!==status)continue;if(fonte&&(d.fonte||"Better")!==fonte)continue;
+        if(d.valor_pago<minV||d.valor_pago>maxV)continue;
         filtered.push(d)}
 
     var total=0,maxItem=0;filtered.forEach(function(d){total+=d.valor_pago;if(d.valor_pago>maxItem)maxItem=d.valor_pago});
@@ -145,18 +149,20 @@ function render(){
 
     var rows=[],limit=Math.min(filtered.length,500);
     for(var i=0;i<limit;i++){var d=filtered[i];
-        rows.push("<tr><td style='white-space:nowrap'>"+(d.data_emissao||d.data)+"</td><td style='white-space:nowrap'>"+(d.data_vencimento||"")+"</td><td style='white-space:nowrap'>"+(d.data_previsao||d.data)+"</td><td><strong>"+d.fornecedor+"</strong></td><td>"+d.categoria+"</td><td>"+d.mes+"</td><td class='vc'>"+fmt(d.valor_pago)+"</td><td>"+d.situacao+"</td></tr>")}
-    if(filtered.length>500)rows.push("<tr><td colspan='8' style='text-align:center;color:#6b7280;padding:12px'>Mostrando 500 de "+filtered.length+"</td></tr>");
+        var bmaBadge=(d.fonte==="BMA")?'<span style="background:#7c3aed;color:white;font-size:8px;padding:1px 5px;border-radius:8px;margin-left:4px">BMA</span>':"";
+        var fonteBadge=(d.fonte==="BMA")?'<span style="background:#7c3aed;color:white;font-size:9px;padding:2px 6px;border-radius:8px">BMA</span>':'<span style="background:#1e40af;color:white;font-size:9px;padding:2px 6px;border-radius:8px">Better</span>';
+        rows.push("<tr><td style='white-space:nowrap'>"+(d.data_emissao||d.data)+"</td><td style='white-space:nowrap'>"+(d.data_vencimento||"")+"</td><td style='white-space:nowrap'>"+(d.data_previsao||d.data)+"</td><td><strong>"+d.fornecedor+"</strong>"+bmaBadge+"</td><td>"+d.categoria+"</td><td>"+d.mes+"</td><td class='vc'>"+fmt(d.valor_pago)+"</td><td>"+d.situacao+"</td><td>"+fonteBadge+"</td></tr>")}
+    if(filtered.length>500)rows.push("<tr><td colspan='9' style='text-align:center;color:#6b7280;padding:12px'>Mostrando 500 de "+filtered.length+"</td></tr>");
     document.getElementById("tbody").innerHTML=rows.join("")}
 
 ["search","filterMin","filterMax"].forEach(function(id){document.getElementById(id).addEventListener("input",render)});
-["filterAno","filterMes","filterCat","filterStatus"].forEach(function(id){document.getElementById(id).addEventListener("change",render)});
+["filterAno","filterMes","filterCat","filterStatus","filterFonte"].forEach(function(id){document.getElementById(id).addEventListener("change",render)});
 
 var sortCol=-1,sortAsc=true;
 function sortTable(col){
     document.querySelectorAll("th").forEach(function(t){t.className=t.className.replace(/sorted-\w+/g,"")});
     if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true}
-    var keys=["data_emissao","data_vencimento","data_previsao","fornecedor","categoria","mes","valor_pago","situacao"];
+    var keys=["data_emissao","data_vencimento","data_previsao","fornecedor","categoria","mes","valor_pago","situacao","fonte"];
     data.sort(function(a,b){var va=a[keys[col]],vb=b[keys[col]];if(typeof va==="number")return sortAsc?va-vb:vb-va;return sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va))});render()}
 render();
 </script>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMA Soluções — Better Education</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f2f5;color:#1a1a2e}
+.header{background:linear-gradient(135deg,#7c3aed,#5b21b6);color:white;padding:24px 40px;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:24px}.header p{opacity:0.85;font-size:13px;margin-top:2px}
+.nav{display:flex;gap:6px}
+.nav-btn{padding:8px 14px;border-radius:8px;border:2px solid rgba(255,255,255,0.3);background:transparent;color:white;font-size:12px;font-weight:600;cursor:pointer}
+.nav-btn:hover,.nav-btn.active{background:white;color:#7c3aed;border-color:white}
+.container{max-width:1500px;margin:0 auto;padding:20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0}
+.card{background:white;border-radius:10px;padding:14px;box-shadow:0 2px 6px rgba(0,0,0,0.07);border-left:4px solid #7c3aed}
+.card h3{font-size:9px;text-transform:uppercase;color:#6b7280;margin-bottom:3px}
+.card .value{font-size:18px;font-weight:700;color:#1f2937}.card .sub{font-size:9px;color:#9ca3af;margin-top:2px}
+.section{background:white;border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.section h3{font-size:13px;color:#374151;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead{background:#f9fafb;position:sticky;top:0;z-index:10}
+th{padding:8px 6px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;font-size:10px;white-space:nowrap}
+td{padding:6px;border-bottom:1px solid #f3f4f6}
+tr:hover{background:#f5f3ff}
+.vc{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.vr{text-align:right}
+.v-purple{color:#7c3aed}.v-green{color:#059669}.v-red{color:#dc2626}.v-dim{color:#9ca3af}
+.breakdown-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:4px;max-height:220px;overflow-y:auto}
+.breakdown-item{display:flex;justify-content:space-between;padding:5px 8px;border-radius:4px;background:#f9fafb;font-size:11px}
+.breakdown-item:hover{background:#f5f3ff}
+.breakdown-item .val{font-weight:700;color:#7c3aed}
+.back-link{display:inline-block;margin-bottom:14px;color:#7c3aed;text-decoration:none;font-size:12px;font-weight:600}
+.back-link:hover{text-decoration:underline}
+.table-scroll{max-height:550px;overflow-y:auto}
+.filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.filters input,.filters select{padding:7px 9px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;outline:none;background:#fafafa}
+.filters label{font-size:9px;font-weight:700;text-transform:uppercase;color:#6b7280}
+.badge-atrasado{background:#fef2f2;color:#dc2626;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:600}
+.badge-pago{background:#f0fdf4;color:#059669;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:600}
+.badge-avencer{background:#eff6ff;color:#2563eb;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:600}
+.totals-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.tc{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:9px 12px;flex:1;min-width:130px}
+.tc .label{font-size:8px;text-transform:uppercase;color:#5b21b6;font-weight:600}
+.tc .amount{font-size:17px;font-weight:700;color:#7c3aed;margin-top:2px}
+#count{font-size:10px;color:#6b7280;margin-left:auto}
+</style>
+</head>
+<body>
+<div class="header">
+<div>
+<h1>BMA Solu&ccedil;&otilde;es &mdash; Vis&atilde;o Geral</h1>
+<p>Folha, benef&iacute;cios, impostos e repasses | Fonte: Omie BMA</p>
+</div>
+<div class="nav">
+<button class="nav-btn active" onclick="setYear('',this)">Todos</button>
+<button class="nav-btn" onclick="setYear('2024',this)">2024</button>
+<button class="nav-btn" onclick="setYear('2025',this)">2025</button>
+<button class="nav-btn" onclick="setYear('2026',this)">2026</button>
+</div>
+</div>
+<div class="container">
+<a href="index.html" class="back-link">&larr; Voltar para Central Financeira</a>
+
+<!-- Cards -->
+<div class="cards" id="cards"></div>
+
+<!-- Monthly table -->
+<div class="section">
+<h3>Resumo Mensal</h3>
+<table>
+<thead><tr>
+<th>M&ecirc;s</th><th class="vr">Despesas</th><th class="vr">Docs</th><th class="vr">M&eacute;dia/Doc</th>
+</tr></thead>
+<tbody id="monthly-tbody"></tbody>
+</table>
+</div>
+
+<!-- Top fornecedores -->
+<div class="section">
+<h3>Top Fornecedores</h3>
+<div class="breakdown-grid" id="forn-grid"></div>
+</div>
+
+<!-- Detailed table -->
+<div class="section">
+<h3>Todas as Contas a Pagar</h3>
+<div class="filters">
+<div><label>Busca</label><br><input type="text" id="search" placeholder="Fornecedor, categoria..." style="width:200px"></div>
+<div><label>Status</label><br><select id="filterStatus"><option value="">Todos</option><option value="PAGO">Pago</option><option value="A VENCER">A Vencer</option><option value="ATRASADO">Atrasado</option></select></div>
+<div><label>Categoria</label><br><select id="filterCat"><option value="">Todas</option></select></div>
+<span id="count"></span>
+</div>
+<div class="totals-row" style="margin-top:0;margin-bottom:12px">
+<div class="tc"><div class="label">Total Filtrado</div><div class="amount" id="total-val">R$ 0</div></div>
+<div class="tc"><div class="label">Registros</div><div class="amount" id="total-count" style="color:#374151;font-size:15px">0</div></div>
+<div class="tc"><div class="label">M&eacute;dia</div><div class="amount" id="total-avg" style="font-size:13px;color:#6b7280">R$ 0</div></div>
+<div class="tc"><div class="label">Maior</div><div class="amount" id="total-max" style="font-size:13px;color:#5b21b6">R$ 0</div></div>
+</div>
+<div class="table-scroll">
+<table>
+<thead><tr>
+<th onclick="sortCol(0)">Data Pgto</th>
+<th onclick="sortCol(1)">Fornecedor</th>
+<th onclick="sortCol(2)">Categoria</th>
+<th onclick="sortCol(3)" style="text-align:right">Valor</th>
+<th onclick="sortCol(4)">Status</th>
+</tr></thead>
+<tbody id="detail-tbody"></tbody>
+</table>
+</div>
+</div>
+</div>
+
+<script src="bma_data.js"></script>
+<script>
+function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtK(v){return Math.abs(v)>=1e6?"R$ "+(v/1e6).toFixed(2)+"M":Math.abs(v)>=1e3?"R$ "+(v/1e3).toFixed(1)+"k":fmt(v)}
+
+var currentYear="";
+function setYear(y,btn){
+    currentYear=y;
+    document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});
+    btn.classList.add("active");
+    render();
+}
+
+// Populate category dropdown
+var allCats={};
+bmaAll.forEach(function(d){allCats[d.categoria]=1});
+var cSel=document.getElementById("filterCat");
+Object.keys(allCats).sort().forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;cSel.appendChild(o)});
+
+function statusBadge(s){
+    if(s==="PAGO") return '<span class="badge-pago">Pago</span>';
+    if(s==="ATRASADO") return '<span class="badge-atrasado">Atrasado</span>';
+    if(s==="A VENCER") return '<span class="badge-avencer">A Vencer</span>';
+    return s;
+}
+
+function render(){
+    // Filter data by year
+    var fData=currentYear?bmaAll.filter(function(d){return d.ano===currentYear}):bmaAll;
+    var fDesp=currentYear?bmaDesp.filter(function(d){return d.m.indexOf("/"+currentYear)!==-1}):bmaDesp;
+
+    // Cards
+    var totalDesp=0,totalRec=0,atrasados=0,totalCount=0;
+    fData.forEach(function(d){
+        totalDesp+=d.valor_pago;totalCount++;
+        if(d.situacao==="ATRASADO")atrasados++;
+    });
+    var resultado=totalRec-totalDesp;
+
+    document.getElementById("cards").innerHTML=
+        '<div class="card"><h3>Total Despesas</h3><div class="value" style="color:#7c3aed">'+fmtK(totalDesp)+'</div><div class="sub">'+totalCount+' contas</div></div>'+
+        '<div class="card"><h3>Total Receitas</h3><div class="value" style="color:#059669">'+fmtK(totalRec)+'</div><div class="sub">Repasses Better</div></div>'+
+        '<div class="card"><h3>Resultado</h3><div class="value" style="color:'+(resultado>=0?"#059669":"#dc2626")+'">'+fmtK(resultado)+'</div><div class="sub">Rec - Desp</div></div>'+
+        '<div class="card" style="border-left-color:#dc2626"><h3>Atrasados</h3><div class="value" style="color:#dc2626">'+atrasados+'</div><div class="sub">contas em atraso</div></div>';
+
+    // Monthly table
+    var mrows="";var mTotal=0,mCount=0;
+    fDesp.forEach(function(d){
+        var avg=d.count>0?d.total/d.count:0;
+        mTotal+=d.total;mCount+=d.count;
+        mrows+='<tr><td style="font-weight:600">'+d.m+'</td><td class="vc v-purple">'+fmt(d.total)+'</td><td class="vr v-dim">'+d.count+'</td><td class="vr v-dim">'+fmt(avg)+'</td></tr>';
+    });
+    mrows+='<tr style="background:#f5f3ff;border-top:2px solid #7c3aed"><td style="font-weight:700">TOTAL</td><td class="vc" style="font-weight:700;color:#7c3aed">'+fmt(mTotal)+'</td><td class="vr" style="font-weight:700">'+mCount+'</td><td class="vr" style="font-weight:700;color:#6b7280">'+fmt(mCount>0?mTotal/mCount:0)+'</td></tr>';
+    document.getElementById("monthly-tbody").innerHTML=mrows;
+
+    // Top fornecedores
+    var fb={};fData.forEach(function(d){
+        if(!fb[d.fornecedor])fb[d.fornecedor]={total:0,count:0};
+        fb[d.fornecedor].total+=d.valor_pago;fb[d.fornecedor].count++;
+    });
+    var fbs=Object.entries(fb).sort(function(a,b){return b[1].total-a[1].total});
+    document.getElementById("forn-grid").innerHTML=fbs.slice(0,30).map(function(e){
+        return '<div class="breakdown-item"><span>'+e[0]+' <span style="color:#9ca3af;font-size:9px">('+e[1].count+')</span></span><span class="val">'+fmtK(e[1].total)+'</span></div>';
+    }).join("");
+
+    // Detail table
+    renderDetail(fData);
+}
+
+function renderDetail(baseData){
+    var search=document.getElementById("search").value.toLowerCase();
+    var status=document.getElementById("filterStatus").value;
+    var cat=document.getElementById("filterCat").value;
+
+    var filtered=[];
+    for(var i=0;i<baseData.length;i++){
+        var d=baseData[i];
+        if(search&&d.fornecedor.toLowerCase().indexOf(search)===-1&&d.categoria.toLowerCase().indexOf(search)===-1)continue;
+        if(status&&d.situacao!==status)continue;
+        if(cat&&d.categoria!==cat)continue;
+        filtered.push(d);
+    }
+
+    var total=0,maxItem=0;
+    filtered.forEach(function(d){total+=d.valor_pago;if(d.valor_pago>maxItem)maxItem=d.valor_pago});
+    var avg=filtered.length>0?total/filtered.length:0;
+    document.getElementById("total-val").textContent=fmt(total);
+    document.getElementById("total-count").textContent=filtered.length;
+    document.getElementById("total-avg").textContent=fmt(avg);
+    document.getElementById("total-max").textContent=fmt(maxItem);
+    document.getElementById("count").textContent=filtered.length+" de "+baseData.length;
+
+    var rows=[],limit=Math.min(filtered.length,500);
+    for(var i=0;i<limit;i++){
+        var d=filtered[i];
+        rows.push("<tr><td style='white-space:nowrap'>"+(d.data||"")+"</td><td><strong>"+d.fornecedor+"</strong></td><td>"+d.categoria+"</td><td class='vc'>"+fmt(d.valor_pago)+"</td><td>"+statusBadge(d.situacao)+"</td></tr>");
+    }
+    if(filtered.length>500)rows.push("<tr><td colspan='5' style='text-align:center;color:#6b7280;padding:12px'>Mostrando 500 de "+filtered.length+"</td></tr>");
+    document.getElementById("detail-tbody").innerHTML=rows.join("");
+
+    // Store filtered for sorting
+    window._filteredBma=filtered;
+}
+
+// Sorting
+var sortColIdx=-1,sortAsc=true;
+function sortCol(col){
+    if(sortColIdx===col)sortAsc=!sortAsc;else{sortColIdx=col;sortAsc=true}
+    var keys=["data","fornecedor","categoria","valor_pago","situacao"];
+    var key=keys[col];
+    var base=currentYear?bmaAll.filter(function(d){return d.ano===currentYear}):bmaAll;
+    base.sort(function(a,b){
+        var va=a[key],vb=b[key];
+        if(typeof va==="number")return sortAsc?va-vb:vb-va;
+        return sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
+    });
+    renderDetail(base);
+}
+
+// Event listeners for filters
+["search"].forEach(function(id){document.getElementById(id).addEventListener("input",function(){
+    var base=currentYear?bmaAll.filter(function(d){return d.ano===currentYear}):bmaAll;
+    renderDetail(base);
+})});
+["filterStatus","filterCat"].forEach(function(id){document.getElementById(id).addEventListener("change",function(){
+    var base=currentYear?bmaAll.filter(function(d){return d.ano===currentYear}):bmaAll;
+    renderDetail(base);
+})});
+
+render();
+</script>
+</body>
+</html>

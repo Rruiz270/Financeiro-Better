@@ -47,7 +47,7 @@ tr.total-row{background:#0f172a;border-top:2px solid #334155}
 tr.total-row td{font-weight:700;padding:12px 8px}
 tr.has-flag td:first-child{position:relative;padding-left:16px}
 tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%;transform:translateY(-50%);width:6px;height:6px;background:#fbbf24;border-radius:50%}
-.v-green{color:#4ade80}.v-red{color:#f87171}.v-blue{color:#60a5fa}.v-amber{color:#fbbf24}.v-pink{color:#f472b6}.v-dim{color:#475569}
+.v-green{color:#4ade80}.v-red{color:#f87171}.v-blue{color:#60a5fa}.v-amber{color:#fbbf24}.v-pink{color:#f472b6}.v-purple{color:#c084fc}.v-dim{color:#475569}
 .flag-icon{cursor:pointer;color:#fbbf24;font-size:14px;margin-left:4px}
 /* Modal */
 .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:100}
@@ -60,7 +60,7 @@ tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%
 </head>
 <body>
 <div class="header">
-<div><h1>Dashboard Financeiro</h1><p>Better Education | Dados: Vindi + Pagar.me + Omie</p></div>
+<div><h1>Dashboard Financeiro</h1><p>Better Education | Dados: Vindi + Pagar.me + Omie + BMA Omie</p></div>
 <div class="nav">
 <button class="nav-btn active" onclick="setYear('',this)">Todos</button>
 <button class="nav-btn" onclick="setYear('2024',this)">2024</button>
@@ -74,12 +74,13 @@ tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%
 <a class="link-btn" href="receitas.html">Receitas (detalhe)</a>
 <a class="link-btn" href="despesas.html">Despesas (detalhe)</a>
 <a class="link-btn" href="notas.html">Notas Produto vs Servi&ccedil;o</a>
+<a class="link-btn" href="bma.html" style="border-color:#7c3aed;color:#c084fc">BMA Solu&ccedil;&otilde;es</a>
 <a class="link-btn" href="vendas.html" style="border-color:#5eead4">Planilha Comiss&atilde;o vs Plataformas</a>
 <div style="background:#1e293b;border:1px solid #334155;border-left:4px solid #fbbf24;border-radius:8px;padding:14px 18px;margin:14px 0">
-<strong style="color:#fbbf24">Nota sobre Despesas:</strong><br>
-<span style="color:#94a3b8;font-size:12px">O Omie Contas a Pagar <strong>não inclui folha de pagamento CLT</strong> (salários, FGTS, IRRF, rescisões, benefícios ~R$ 108k/mês). A folha é processada pela <strong>BMA (BPO de folha)</strong> em conta Omie separada. API da BMA será integrada futuramente.<br>
+<strong style="color:#c084fc">BMA Solu&ccedil;&otilde;es integrada!</strong><br>
+<span style="color:#94a3b8;font-size:12px">A coluna <strong style="color:#c084fc">BMA</strong> agora puxa dados via API do Omie BMA (1.228 registros). Inclui folha CLT, FGTS, IRRF, benef&iacute;cios, impostos e repasses.<br>
 <strong>Receitas 2026:</strong> Fonte = planilha ERP (Pagar.me + Yapay + Cielo + B2B direto).<br>
-<strong>Receitas 2024-2025:</strong> Fonte = Vindi bills pagas (não inclui Pagar.me transfers desses anos).</span>
+<strong>Receitas 2024-2025:</strong> Fonte = Vindi bills pagas (n&atilde;o inclui Pagar.me transfers desses anos).</span>
 </div>
 </div>
 <div class="section">
@@ -96,7 +97,7 @@ tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%
 <h2>Detalhamento Mensal</h2>
 <table><thead><tr>
 <th style="text-align:left">M&ecirc;s</th><th>Receitas</th><th>Bills</th><th>Despesas</th><th>Docs</th>
-<th>Estornos</th><th>BMA Folha</th><th>Resultado</th><th>NFS-e</th><th>NF-e</th><th>Pendentes</th>
+<th>Estornos</th><th style="color:#c084fc">BMA <span style="background:#7c3aed;color:white;font-size:7px;padding:1px 4px;border-radius:6px;vertical-align:middle">API</span></th><th>Resultado</th><th>NFS-e</th><th>NF-e</th><th>Pendentes</th>
 </tr></thead><tbody id="tbody"></tbody></table>
 </div>
 
@@ -179,8 +180,8 @@ function render(){
     filtered=filtered.filter(function(d){return d.rec>0||d.desp>0||d.nfse>0||d.nfe>0});
 
     var tR=0,tD=0,tE=0,tC=0,tP=0,tNs=0,tNe=0,tRes=0,nR=0,nD=0,nE=0,nC=0,nP=0,nNs=0,nNe=0;
-    var tB=0;
-    filtered.forEach(function(d){tR+=d.rec;tD+=d.desp;tE+=d.est;tC+=d.chb;tB+=(d.bma||0);tP+=d.pend;tNs+=d.nfse;tNe+=d.nfe;tRes+=d.res;nR+=d.rec_n;nD+=d.desp_n;nE+=d.est_n;nC+=d.chb_n;nP+=d.pend_n;nNs+=d.nfse_n;nNe+=d.nfe_n});
+    var tB=0,nB=0;
+    filtered.forEach(function(d){tR+=d.rec;tD+=d.desp;tE+=d.est;tC+=d.chb;tB+=(d.bma_desp||0);nB+=(d.bma_desp_n||0);tP+=d.pend;tNs+=d.nfse;tNe+=d.nfe;tRes+=d.res;nR+=d.rec_n;nD+=d.desp_n;nE+=d.est_n;nC+=d.chb_n;nP+=d.pend_n;nNs+=d.nfse_n;nNe+=d.nfe_n});
 
     document.getElementById("tiles").innerHTML=
         '<div class="tile green"><h3>Receita Bruta (Vindi)</h3><div class="value">'+fmtK(tR)+'</div><div class="sub">'+nR+' faturas</div></div>'+
@@ -190,7 +191,7 @@ function render(){
         '<div class="tile blue"><h3>NFS-e (Serviço)</h3><div class="value">'+fmtK(tNs)+'</div><div class="sub">'+nNs+' notas</div></div>'+
         '<div class="tile purple"><h3>NF-e (Produto)</h3><div class="value">'+fmtK(tNe)+'</div><div class="sub">'+nNe+' pedidos</div></div>'+
         '<div class="tile amber"><h3>Pendentes</h3><div class="value">'+fmtK(tP)+'</div><div class="sub">'+nP+' faturas</div></div>'+
-        '<div class="tile amber"><h3>BMA Folha (a confirmar)</h3><div class="value">'+fmtK(tB)+'</div><div class="sub">Folha CLT fora do Omie CP</div></div>';
+        '<div class="tile purple"><h3>BMA Soluções <span style="background:#7c3aed;color:white;font-size:7px;padding:1px 4px;border-radius:6px">API</span></h3><div class="value">'+fmtK(tB)+'</div><div class="sub">'+nB+' contas | Folha+Benefícios+Impostos</div></div>';
 
     var maxVal=0;filtered.forEach(function(d){if(d.rec>maxVal)maxVal=d.rec;if(d.desp>maxVal)maxVal=d.desp});if(maxVal===0)maxVal=1;
 
@@ -217,12 +218,13 @@ function render(){
         var hasDiverg=typeof dashDivergences!=="undefined"&&dashDivergences[d.m];
         rows+='<td class="v-red" style="'+(hasDiverg?'cursor:pointer;text-decoration:underline':'')+'" '+(hasDiverg?'onclick="openDiverg(\''+d.m+'\')"':'')+'>'+fmtK(d.desp)+(hasDiverg?' <span style="font-size:8px;color:#fbbf24">ℹ</span>':'')+'</td><td class="v-dim">'+d.desp_n+'</td>';
         rows+='<td class="'+(d.est>0?"v-pink":"v-dim")+'">'+(d.est>0?fmtK(d.est)+' ('+d.est_n+')':'-')+'</td>';
-        rows+='<td class="'+(d.bma>0?"v-amber":"v-dim")+'">'+(d.bma>0?fmtK(d.bma)+' <span style="font-size:8px;color:#94a3b8">(a confirmar)</span>':d.bma<0?fmtK(d.bma)+' <span style="font-size:8px;color:#94a3b8">(timing)</span>':'-')+'</td>';
+        var bmaVal=d.bma_desp||0;var bmaN=d.bma_desp_n||0;
+        rows+='<td class="'+(bmaVal>0?"v-purple":"v-dim")+'">'+(bmaVal>0?fmtK(bmaVal)+' <span style="font-size:8px;color:#94a3b8">('+bmaN+')</span>':'-')+'</td>';
         rows+='<td class="'+rc+'">'+fmtK(d.res)+'</td>';
         rows+='<td class="v-blue">'+fmtK(d.nfse)+'</td><td class="v-blue">'+fmtK(d.nfe)+'</td>';
         rows+='<td class="'+(d.pend>0?"v-amber":"v-dim")+'">'+(d.pend>0?fmtK(d.pend)+' ('+d.pend_n+')':'-')+'</td></tr>';
     });
-    rows+='<tr class="total-row"><td>TOTAL</td><td class="v-green">'+fmtK(tR)+'</td><td class="v-dim">'+nR+'</td><td class="v-red">'+fmtK(tD)+'</td><td class="v-dim">'+nD+'</td><td class="v-pink">'+fmtK(tE)+'</td><td class="v-amber">'+(tB>0?fmtK(tB)+' (a confirmar)':'-')+'</td><td class="'+(tRes>=0?"v-green":"v-red")+'">'+fmtK(tRes)+'</td><td class="v-blue">'+fmtK(tNs)+'</td><td class="v-blue">'+fmtK(tNe)+'</td><td class="v-amber">'+fmtK(tP)+'</td></tr>';
+    rows+='<tr class="total-row"><td>TOTAL</td><td class="v-green">'+fmtK(tR)+'</td><td class="v-dim">'+nR+'</td><td class="v-red">'+fmtK(tD)+'</td><td class="v-dim">'+nD+'</td><td class="v-pink">'+fmtK(tE)+'</td><td class="v-purple">'+(tB>0?fmtK(tB)+' ('+nB+')':'-')+'</td><td class="'+(tRes>=0?"v-green":"v-red")+'">'+fmtK(tRes)+'</td><td class="v-blue">'+fmtK(tNs)+'</td><td class="v-blue">'+fmtK(tNe)+'</td><td class="v-amber">'+fmtK(tP)+'</td></tr>';
     document.getElementById("tbody").innerHTML=rows;
 }
 render();
