@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnaround Better - Plano de Reestruturação</title>
+    <script src="turnaround_full_data.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        h1 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; color: #f8fafc; }
+        h2 { font-size: 1.4rem; margin: 24px 0 12px; color: #f1f5f9; }
+        h3 { font-size: 1.1rem; margin: 18px 0 10px; color: #cbd5e1; }
+
+        .nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 24px; justify-content: center; }
+        .nav button {
+            padding: 8px 16px; border: 1px solid #334155; border-radius: 6px;
+            background: #1e293b; color: #94a3b8; cursor: pointer; font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .nav button:hover { background: #334155; color: #e2e8f0; }
+        .nav button.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+
+        .tab { display: none; }
+        .tab.active { display: block; }
+
+        .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+        .tile {
+            background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+            padding: 16px; text-align: center;
+        }
+        .tile .value { font-size: 1.5rem; font-weight: 700; color: #f8fafc; }
+        .tile .label { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
+        .tile.red .value { color: #f87171; }
+        .tile.green .value { color: #4ade80; }
+        .tile.amber .value { color: #fbbf24; }
+
+        .box {
+            background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+            padding: 16px; margin: 16px 0;
+        }
+        .box h3 { margin-top: 0; }
+
+        .before-after {
+            display: flex; gap: 12px; align-items: center; justify-content: center;
+            flex-wrap: wrap; margin: 16px 0;
+        }
+        .before-after .step {
+            background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+            padding: 14px 20px; text-align: center; min-width: 180px;
+        }
+        .before-after .arrow { font-size: 1.5rem; color: #64748b; }
+        .before-after .step .val { font-size: 1.3rem; font-weight: 700; }
+
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+        thead { background: #1e293b; }
+        thead th {
+            padding: 10px 8px; text-align: left; color: #94a3b8; font-weight: 600;
+            border-bottom: 2px solid #334155;
+        }
+        tbody td { padding: 8px; border-bottom: 1px solid #1e293b; }
+        tbody tr:hover { background: #1e293b; }
+        .total-row { font-weight: 700; background: #1e293b !important; }
+        .total-row td { border-top: 2px solid #334155; }
+
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        .badge-red { background: #991b1b; color: #fca5a5; }
+        .badge-green { background: #166534; color: #86efac; }
+        .badge-amber { background: #92400e; color: #fde68a; }
+
+        .chart-container { margin: 16px 0; overflow-x: auto; }
+        .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 250px; padding: 10px 0; }
+        .bar-group { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 50px; }
+        .bar-pair { display: flex; gap: 3px; align-items: flex-end; height: 200px; }
+        .bar {
+            width: 22px; border-radius: 3px 3px 0 0; position: relative; min-height: 4px;
+            transition: height 0.3s;
+        }
+        .bar-label { font-size: 0.7rem; color: #94a3b8; margin-top: 6px; text-align: center; }
+
+        .horario-bar-container { margin: 8px 0; }
+        .horario-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+        .horario-label { width: 35px; text-align: right; font-size: 0.85rem; color: #94a3b8; }
+        .horario-bar {
+            height: 28px; border-radius: 4px; display: flex; align-items: center;
+            padding: 0 10px; font-size: 0.75rem; font-weight: 600; color: #0f172a;
+            min-width: 30px;
+        }
+        .horario-info { font-size: 0.8rem; color: #94a3b8; margin-left: 8px; white-space: nowrap; }
+
+        .note {
+            background: #1e293b; border-left: 3px solid #3b82f6; padding: 12px 16px;
+            margin: 12px 0; font-size: 0.85rem; color: #94a3b8; border-radius: 0 6px 6px 0;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1e3a5f, #1e293b); border: 1px solid #3b82f6;
+            border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;
+        }
+        .hero .big { font-size: 1.6rem; font-weight: 700; color: #4ade80; }
+        .hero .sub { font-size: 1rem; color: #94a3b8; margin-top: 8px; }
+
+        .phase { margin: 16px 0; }
+        .phase-header {
+            background: #1e293b; border: 1px solid #334155; border-radius: 8px 8px 0 0;
+            padding: 12px 16px; font-weight: 600; color: #f1f5f9;
+        }
+        .phase-body {
+            border: 1px solid #334155; border-top: none; border-radius: 0 0 8px 8px;
+            padding: 12px 16px;
+        }
+        .phase-body li { margin: 6px 0; font-size: 0.9rem; list-style: disc; margin-left: 20px; }
+
+        .subtotal-row { background: #172033 !important; font-weight: 600; }
+        .subtotal-row td { border-top: 1px solid #334155; font-style: italic; }
+
+        @media (max-width: 768px) {
+            .tiles { grid-template-columns: 1fr 1fr; }
+            .before-after { flex-direction: column; }
+            .before-after .arrow { transform: rotate(90deg); }
+            table { font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Turnaround Better Education</h1>
+    <p style="text-align:center;color:#64748b;margin-bottom:16px;">Plano de Reestruturação Financeira &mdash; Maio 2026</p>
+
+    <nav class="nav" id="nav"></nav>
+
+    <div id="tab-content"></div>
+
+    <script>
+    const fmt = v => "R$ " + v.toLocaleString("pt-BR");
+    const fmtK = v => "R$ " + (v/1000).toFixed(1) + "k";
+    const pct = v => v + "%";
+
+    const tabs = [
+        "Resumo Executivo", "Projeção 12 Meses", "Alunos & Engajamento",
+        "Professores", "Horários", "Helen & Cartão",
+        "Consolidação Módulos", "Plano de Ação"
+    ];
+
+    // Build nav
+    const nav = document.getElementById("nav");
+    tabs.forEach((t, i) => {
+        const btn = document.createElement("button");
+        btn.textContent = t;
+        btn.onclick = () => showTab(i);
+        nav.appendChild(btn);
+    });
+
+    function showTab(idx) {
+        document.querySelectorAll(".nav button").forEach((b, i) => {
+            b.classList.toggle("active", i === idx);
+        });
+        const container = document.getElementById("tab-content");
+        container.innerHTML = "";
+        const div = document.createElement("div");
+        div.className = "tab active";
+        builders[idx](div);
+        container.appendChild(div);
+    }
+
+    const builders = [buildResumo, buildProjecao, buildAlunos, buildProfessores, buildHorarios, buildHelen, buildConsolidacao, buildPlano];
+
+    // TAB 1: Resumo Executivo
+    function buildResumo(el) {
+        el.innerHTML = `
+        <h2>Resumo Executivo</h2>
+        <div class="before-after">
+            <div class="step"><div style="color:#94a3b8;font-size:0.8rem">Hoje</div><div class="val" style="color:#f87171">${fmtK(TD.resultado_atual)}/mês</div></div>
+            <div class="arrow">→</div>
+            <div class="step"><div style="color:#94a3b8;font-size:0.8rem">Pós-cortes</div><div class="val" style="color:#fbbf24">${fmtK(TD.resultado_pos)}</div></div>
+            <div class="arrow">→</div>
+            <div class="step"><div style="color:#94a3b8;font-size:0.8rem">Com vendas</div><div class="val" style="color:#4ade80">+ lucro</div></div>
+        </div>
+        <div class="tiles">
+            <div class="tile red"><div class="value">${fmtK(TD.total_cuts)}</div><div class="label">Total de Cortes</div></div>
+            <div class="tile red"><div class="value">${fmtK(TD.helen_total_cut)}</div><div class="label">Helen (salário + pessoal)</div></div>
+            <div class="tile red"><div class="value">${fmtK(12333+16000)}</div><div class="label">Professores (inativos + consolidação)</div></div>
+            <div class="tile amber"><div class="value">${fmtK(TD.total_cuts - TD.helen_total_cut - 12333 - 16000)}</div><div class="label">Outros (PJ, pedagógico, IA)</div></div>
+        </div>
+        <div class="box">
+            <h3>Insights Críticos</h3>
+            <ul style="list-style:disc;padding-left:20px;color:#94a3b8;font-size:0.9rem;line-height:1.8">
+                <li><strong style="color:#f87171">991 alunos</strong> nunca compareceram a uma aula (35% do total)</li>
+                <li>Média de <strong style="color:#fbbf24">2 alunos por aula</strong> — capacidade subutilizada</li>
+                <li>Taxa de renovação: <strong style="color:#f87171">2.4%</strong> (45 de 1.839)</li>
+            </ul>
+        </div>
+        <h3>O que muda</h3>
+        <table>
+            <thead><tr><th>Item</th><th>Antes</th><th>Depois</th><th>Economia/mês</th></tr></thead>
+            <tbody id="cuts-table"></tbody>
+        </table>`;
+        const tbody = el.querySelector("#cuts-table");
+        let total = 0;
+        for (const [item, val] of Object.entries(TD.cuts)) {
+            total += val;
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${item}</td><td style="color:#f87171">${fmt(val)}</td><td style="color:#4ade80">R$ 0</td><td style="color:#4ade80">-${fmt(val)}</td>`;
+            tbody.appendChild(tr);
+        }
+        for (const [item, val] of Object.entries(TD.new_costs)) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${item}</td><td>—</td><td style="color:#fbbf24">${fmt(val)}</td><td style="color:#fbbf24">+${fmt(val)}</td>`;
+            tbody.appendChild(tr);
+        }
+        const trT = document.createElement("tr");
+        trT.className = "total-row";
+        trT.innerHTML = `<td>TOTAL LÍQUIDO</td><td></td><td></td><td style="color:#4ade80">-${fmt(TD.net_savings)}/mês</td>`;
+        tbody.appendChild(trT);
+    }
+
+    // TAB 2: Projeção 12 Meses
+    function buildProjecao(el) {
+        const maxVal = Math.max(...TD.projection.map(p => Math.max(p.receita, p.despesa)));
+        let chartBars = "";
+        TD.projection.forEach(p => {
+            const hR = (p.receita / maxVal * 180).toFixed(0);
+            const hD = (p.despesa / maxVal * 180).toFixed(0);
+            chartBars += `<div class="bar-group">
+                <div class="bar-pair">
+                    <div class="bar" style="height:${hR}px;background:#4ade80;" title="Receita: ${fmt(p.receita)}"></div>
+                    <div class="bar" style="height:${hD}px;background:#f87171;" title="Despesa: ${fmt(p.despesa)}"></div>
+                </div>
+                <div class="bar-label">${p.m.split("/")[0]}</div>
+            </div>`;
+        });
+
+        let tableRows = "";
+        let totals = {subs:0,new_comm:0,new_flow:0,new_priv:0,new_b2b:0,new_esp:0,new_sales:0,expiring:0,renewals:0,churn:0,net_adds:0,new_mrr:0,lost_mrr:0,receita:0,despesa:0,resultado:0};
+        TD.projection.forEach(p => {
+            for (let k in totals) totals[k] += p[k];
+            const resColor = p.resultado >= 0 ? "#4ade80" : "#f87171";
+            tableRows += `<tr>
+                <td>${p.m}</td><td>${p.subs}</td>
+                <td>${p.new_comm}</td><td>${p.new_flow}</td><td>${p.new_priv}</td><td>${p.new_b2b}</td><td>${p.new_esp}</td>
+                <td><strong>${p.new_sales}</strong></td><td>${p.expiring}</td><td>${p.renewals}</td><td>${p.churn}</td>
+                <td style="color:${p.net_adds>=0?'#4ade80':'#f87171'}">${p.net_adds}</td>
+                <td style="color:#4ade80">${fmtK(p.new_mrr)}</td><td style="color:#f87171">${fmtK(p.lost_mrr)}</td>
+                <td>${fmtK(p.receita)}</td><td>${fmtK(p.despesa)}</td>
+                <td style="color:${resColor}">${fmtK(p.resultado)}</td>
+            </tr>`;
+        });
+        const rColor = totals.resultado >= 0 ? "#4ade80" : "#f87171";
+        tableRows += `<tr class="total-row">
+            <td>TOTAL</td><td>—</td>
+            <td>${totals.new_comm}</td><td>${totals.new_flow}</td><td>${totals.new_priv}</td><td>${totals.new_b2b}</td><td>${totals.new_esp}</td>
+            <td><strong>${totals.new_sales}</strong></td><td>${totals.expiring}</td><td>${totals.renewals}</td><td>${totals.churn}</td>
+            <td style="color:#4ade80">${totals.net_adds}</td>
+            <td style="color:#4ade80">${fmtK(totals.new_mrr)}</td><td style="color:#f87171">${fmtK(totals.lost_mrr)}</td>
+            <td>${fmtK(totals.receita)}</td><td>${fmtK(totals.despesa)}</td>
+            <td style="color:${rColor}">${fmtK(totals.resultado)}</td>
+        </tr>`;
+
+        el.innerHTML = `
+        <h2>Projeção 12 Meses</h2>
+        <div class="chart-container">
+            <div style="display:flex;gap:16px;margin-bottom:8px;font-size:0.8rem;">
+                <span><span style="display:inline-block;width:12px;height:12px;background:#4ade80;border-radius:2px;"></span> Receita</span>
+                <span><span style="display:inline-block;width:12px;height:12px;background:#f87171;border-radius:2px;"></span> Despesa</span>
+            </div>
+            <div class="bar-chart">${chartBars}</div>
+        </div>
+        <div style="overflow-x:auto;">
+        <table>
+            <thead><tr>
+                <th>Mês</th><th>Subs</th><th>Comm</th><th>Flow</th><th>Priv</th><th>B2B</th><th>Esp</th>
+                <th>Vendas</th><th>Expir.</th><th>Renov.</th><th>Churn</th><th>Net</th>
+                <th>+MRR</th><th>-MRR</th><th>Receita</th><th>Despesa</th><th>Result.</th>
+            </tr></thead>
+            <tbody>${tableRows}</tbody>
+        </table>
+        </div>`;
+    }
+
+    // TAB 3: Alunos & Engajamento
+    function buildAlunos(el) {
+        let freqRows = "";
+        TD.freq_dist.forEach(f => {
+            freqRows += `<tr><td>${f.faixa}</td><td>${f.alunos}</td><td>${f.pct}%</td></tr>`;
+        });
+
+        let modRows = "";
+        TD.modules.forEach(m => {
+            const color = m.pct_nunca > 50 ? "#f87171" : m.pct_nunca > 40 ? "#fbbf24" : "#4ade80";
+            const avgColor = m.avg_aula >= 4 ? "#4ade80" : m.avg_aula >= 2 ? "#fbbf24" : "#f87171";
+            modRows += `<tr>
+                <td>${m.name}</td><td>${m.inscritos}</td><td>${m.nunca}</td>
+                <td style="color:${color};font-weight:600">${m.pct_nunca}%</td>
+                <td style="color:${avgColor};font-weight:600">${m.avg_aula} <span style="color:#475569;font-weight:400">(meta: 4-5)</span></td><td>${m.proposta}</td>
+            </tr>`;
+        });
+
+        el.innerHTML = `
+        <h2>Alunos & Engajamento</h2>
+        <div class="tiles">
+            <div class="tile red"><div class="value">991 / 2.830</div><div class="label">Nunca compareceram (35%)</div></div>
+            <div class="tile red"><div class="value">45 / 1.839</div><div class="label">Renovação (2.4%)</div></div>
+            <div class="tile red"><div class="value">1.7</div><div class="label">Média alunos/aula (meta: 4-5)</div></div>
+            <div class="tile amber"><div class="value">400</div><div class="label">Ativos 6-12 meses</div></div>
+        </div>
+        <div class="insight" style="background:#1a1a2e;border-left:4px solid #f87171;padding:12px 16px;margin:14px 0;border-radius:8px">
+            <strong style="color:#f87171">NENHUM módulo atinge a meta de 4-5 alunos/aula.</strong><br>
+            <span style="color:#94a3b8;font-size:12px">O melhor (Essential 4) tem 2.8 — metade da meta. Com consolidação 11→6 níveis, 3 dos 6 novos módulos atingem ou superam a meta.</span>
+        </div>
+        <h3>Distribuição de Frequência</h3>
+        <table>
+            <thead><tr><th>Faixa</th><th>Alunos</th><th>% do Total</th></tr></thead>
+            <tbody>${freqRows}</tbody>
+        </table>
+        <h3>Módulos</h3>
+        <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Módulo</th><th>Inscritos</th><th>Nunca</th><th>% Nunca</th><th>Média Aula</th><th>Proposta</th></tr></thead>
+            <tbody>${modRows}</tbody>
+        </table>
+        </div>`;
+    }
+
+    // TAB 4: Professores
+    function buildProfessores(el) {
+        let inactiveRows = "";
+        let totalInactive = 0;
+        TD.teachers_inactive.forEach(t => {
+            totalInactive += t.pago;
+            const isPalmares = t.name.indexOf('Anieli') >= 0 || t.name.indexOf('Vitória') >= 0 || t.name.indexOf('Marion') >= 0;
+            const badge = isPalmares
+                ? '<span class="badge badge-amber">VERIFICAR (Palmares?)</span>'
+                : '<span class="badge badge-amber">VERIFICAR</span>';
+            const note = isPalmares ? 'Pode ser prof. Palmares' : 'Pode dar aula Private';
+            inactiveRows += `<tr>
+                <td>${t.name}</td><td>${t.aulas}</td><td>${fmt(t.pago)}</td>
+                <td>${badge}</td><td style="font-size:10px;color:#94a3b8">${note}</td>
+            </tr>`;
+        });
+        inactiveRows += `<tr class="total-row"><td>TOTAL (${TD.teachers_inactive.length})</td><td>0</td><td>${fmt(totalInactive)}</td><td></td><td></td></tr>`;
+
+        let activeRows = "";
+        TD.teachers_active.forEach(t => {
+            const custoAula = t.aulas > 0 ? (t.pago / t.aulas) : 0;
+            const color = custoAula > 80 ? "#f87171" : custoAula > 60 ? "#fbbf24" : "#4ade80";
+            activeRows += `<tr>
+                <td>${t.name}</td><td>${t.aulas}</td><td>${t.dias}</td><td>${t.aulas_dia}</td>
+                <td>${fmt(t.pago)}</td>
+                <td style="color:${color};font-weight:600">${fmt(Math.round(custoAula))}</td>
+            </tr>`;
+        });
+
+        el.innerHTML = `
+        <h2>Professores</h2>
+        <h3>Inativos (0 aulas no portal em 2026)</h3>
+        <div class="note" style="margin-bottom:10px">Antes de desligar, verificar se dão aulas particulares (Private) ou são do projeto Palmares. Zero aulas no portal não significa necessariamente inatividade.</div>
+        <table>
+            <thead><tr><th>Nome</th><th>Aulas</th><th>Pago (6m)</th><th>Ação</th><th>Obs</th></tr></thead>
+            <tbody>${inactiveRows}</tbody>
+        </table>
+        <h3>Ativos</h3>
+        <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Nome</th><th>Aulas</th><th>Dias</th><th>Aulas/Dia</th><th>Pago</th><th>Custo/Aula</th></tr></thead>
+            <tbody>${activeRows}</tbody>
+        </table>
+        </div>`;
+    }
+
+    // TAB 5: Horários
+    function buildHorarios(el) {
+        const maxAulas = Math.max(...TD.horarios.map(h => h.aulas));
+        const statusColors = { PICO: "#4ade80", BOA: "#4ade80", MEDIA: "#fbbf24", CORTAR: "#f87171" };
+        const badgeClass = { PICO: "badge-green", BOA: "badge-green", MEDIA: "badge-amber", CORTAR: "badge-red" };
+
+        let bars = "";
+        TD.horarios.forEach(h => {
+            const width = Math.max((h.aulas / maxAulas * 100), 5);
+            bars += `<div class="horario-row">
+                <div class="horario-label">${h.hora}</div>
+                <div class="horario-bar" style="width:${width}%;background:${statusColors[h.status]}">${h.hora}</div>
+                <div class="horario-info">${h.aulas} aulas &middot; Média: ${h.media} al. <span class="badge ${badgeClass[h.status]}">${h.status}</span></div>
+            </div>`;
+        });
+
+        el.innerHTML = `
+        <h2>Horários (UTC-3)</h2>
+        <div class="horario-bar-container">${bars}</div>
+        <div class="note">14h é o único horário morto. Picos: 12h (almoço) e 18-19h (noite).</div>`;
+    }
+
+    // TAB 6: Helen & Cartão
+    function buildHelen(el) {
+        // Group transfers
+        const groups = {};
+        TD.helen_transfer.forEach(item => {
+            if (!groups[item.tipo]) groups[item.tipo] = [];
+            groups[item.tipo].push(item);
+        });
+
+        let transferRows = "";
+        let grandTotal = 0;
+        for (const tipo of ["MKT", "PLAT", "IA"]) {
+            if (!groups[tipo]) continue;
+            let subtotal = 0;
+            groups[tipo].forEach(item => {
+                subtotal += item.valor;
+                grandTotal += item.valor;
+                transferRows += `<tr><td>${item.name}</td><td>${tipo}</td><td>${fmt(item.valor)}</td></tr>`;
+            });
+            transferRows += `<tr class="subtotal-row"><td>Subtotal ${tipo}</td><td></td><td>${fmt(subtotal)}</td></tr>`;
+        }
+        transferRows += `<tr class="total-row"><td>TOTAL TRANSFERÊNCIAS</td><td></td><td style="color:#4ade80">${fmt(grandTotal)}</td></tr>`;
+
+        let cancelRows = "";
+        let cancelTotal = 0;
+        TD.helen_cancel.forEach(item => {
+            cancelTotal += item.valor;
+            cancelRows += `<tr><td>${item.name}</td><td>${fmt(item.valor)}</td><td>${item.razao}</td></tr>`;
+        });
+        cancelRows += `<tr class="total-row"><td>TOTAL CANCELAR</td><td style="color:#4ade80">${fmt(cancelTotal)}</td><td></td></tr>`;
+
+        el.innerHTML = `
+        <h2>Helen & Cartão Corporativo</h2>
+        <div class="tiles">
+            <div class="tile red"><div class="value">${fmtK(TD.helen_salary)}</div><div class="label">Salário (PJ+CLT) — CORTA</div></div>
+            <div class="tile red"><div class="value">${fmtK(TD.helen_personal_total)}</div><div class="label">Pessoal (Uber/alim/comb) — CORTA</div></div>
+            <div class="tile red"><div class="value">${fmtK(TD.helen_other_total)}</div><div class="label">Outros pessoais — CORTA</div></div>
+        </div>
+        <div class="note">Hospedagem e viagens (R$ 5.9k/mês) NÃO cortam — necessários para expansão.</div>
+        <h3>Transferir para Empresa (manter)</h3>
+        <table>
+            <thead><tr><th>Item</th><th>Tipo</th><th>Valor/mês</th></tr></thead>
+            <tbody>${transferRows}</tbody>
+        </table>
+        <h3>Cancelar</h3>
+        <table>
+            <thead><tr><th>Item</th><th>Valor/mês</th><th>Razão</th></tr></thead>
+            <tbody>${cancelRows}</tbody>
+        </table>`;
+    }
+
+    // TAB 7: Consolidação Módulos
+    function buildConsolidacao(el) {
+        let rows = "";
+        let totalAlunos = 0;
+        let totalReduz = 0;
+        TD.module_consolidation.forEach(m => {
+            totalAlunos += m.alunos;
+            totalReduz += m.aulas_reduz;
+            const avgC = m.avg_consolidado || 0;
+            const avgColor = avgC >= 4 ? "#4ade80" : avgC >= 3 ? "#fbbf24" : "#f87171";
+            const statusBadge = m.status_meta ? `<span class="badge" style="background:${avgC>=4?'#052e16':'#451a03'};color:${avgC>=4?'#4ade80':'#fbbf24'}">${m.status_meta||''}</span>` : '';
+            rows += `<tr><td>${m.de}</td><td><strong>${m.para}</strong></td><td>${m.alunos}</td><td>${m.aulas_reduz||0}</td><td style="color:${avgColor};font-weight:700">${avgC > 0 ? avgC.toFixed(1) : '—'}</td><td>${statusBadge}</td><td>${m.economia}</td></tr>`;
+        });
+        rows += `<tr class="total-row"><td>11 → 6 módulos</td><td></td><td>${totalAlunos}</td><td>${totalReduz}</td><td></td><td></td><td style="color:#4ade80">${fmtK(TD.module_savings_monthly)}/mês</td></tr>`;
+
+        el.innerHTML = `
+        <h2>Consolidação de Módulos — 11 → 6</h2>
+        <div class="insight" style="background:#052e16;border-left:4px solid #4ade80;padding:12px 16px;margin:0 0 14px;border-radius:8px">
+            <strong style="color:#4ade80">Meta: 4-5 alunos/aula.</strong> Hoje: média 1.7. Com consolidação, 3 de 6 módulos atingem a meta.
+        </div>
+        <table>
+            <thead><tr><th>De</th><th>Para</th><th>Alunos</th><th>Aulas Reduz/mês</th><th>Média Projetada</th><th>vs Meta</th><th>Economia</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+        <div class="note">Economia vem da redução de 4 professores (menos horários = menos professores necessários). Média de alunos/aula dobra com junção de turmas.</div>`;
+    }
+
+    // TAB 8: Plano de Ação
+    function buildPlano(el) {
+        el.innerHTML = `
+        <h2>Plano de Ação</h2>
+        <div class="phase">
+            <div class="phase-header">Fase 1 — Semana 1-2: Cortes Imediatos</div>
+            <div class="phase-body"><ul>
+                <li>Helen — desligamento total <strong style="color:#f87171">(R$ 39.6k/mês)</strong></li>
+                <li>5 professores inativos — desligamento <strong style="color:#f87171">(R$ 6k excl. Palmares)</strong></li>
+                <li>Assinaturas IA duplicadas — cancelar <strong style="color:#f87171">(R$ 1.5k/mês)</strong></li>
+            </ul></div>
+        </div>
+        <div class="phase">
+            <div class="phase-header">Fase 2 — Semana 3-4: Reestruturação</div>
+            <div class="phase-body"><ul>
+                <li>Pedagógico (Luiz Lima + Valcilene) — desligar <strong style="color:#f87171">(R$ 6.7k/mês)</strong></li>
+                <li>Terceiros PJ — redução de contratos <strong style="color:#f87171">(R$ 15k/mês)</strong></li>
+                <li>Verificar situação professores Palmares</li>
+            </ul></div>
+        </div>
+        <div class="phase">
+            <div class="phase-header">Fase 3 — Mês 2-3: Crescimento</div>
+            <div class="phase-body"><ul>
+                <li>Consolidar módulos (11 → 6) <strong style="color:#f87171">(R$ 16k/mês economia)</strong></li>
+                <li>Desligar 4 professores da consolidação</li>
+                <li>Contratar 2 vendedores B2C <strong style="color:#fbbf24">(+R$ 7k/mês investimento)</strong></li>
+            </ul></div>
+        </div>
+        <div class="hero">
+            <div class="big">Economia líquida: R$ 84k/mês</div>
+            <div class="sub">Com crescimento de vendas → breakeven em 3 meses</div>
+        </div>`;
+    }
+
+    // Init
+    showTab(0);
+    </script>
+</body>
+</html>

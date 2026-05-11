@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Plan 12 Meses — Better Education</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#e2e8f0}
+.header{background:linear-gradient(135deg,#059669,#047857);padding:24px 40px}
+.header h1{font-size:22px;color:white}.header p{font-size:12px;color:#86efac;margin-top:4px}
+.container{max-width:1500px;margin:0 auto;padding:20px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.tile{background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155}
+.tile h4{font-size:9px;text-transform:uppercase;color:#64748b;margin-bottom:6px}
+.tile .val{font-size:24px;font-weight:700}.tile .sub{font-size:10px;color:#64748b;margin-top:4px}
+.tile.green .val{color:#4ade80}.tile.red .val{color:#f87171}.tile.amber .val{color:#fbbf24}.tile.blue .val{color:#60a5fa}
+.section{background:#1e293b;border-radius:12px;padding:20px;margin:14px 0;border:1px solid #334155}
+.section h2{font-size:16px;color:#f8fafc;margin-bottom:14px}
+.section h3{font-size:13px;color:#94a3b8;margin:14px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead{background:#0f172a}
+th{padding:10px 6px;text-align:right;color:#64748b;border-bottom:1px solid #334155;font-size:9px;text-transform:uppercase;white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:8px 6px;border-bottom:1px solid rgba(51,65,85,0.5);text-align:right;white-space:nowrap}
+td:first-child{text-align:left;font-weight:600;color:#f8fafc}
+tr:hover{background:#0f172a}
+.v-green{color:#4ade80}.v-red{color:#f87171}.v-amber{color:#fbbf24}.v-blue{color:#60a5fa}.v-dim{color:#475569}
+tr.total-row{background:#0f172a;border-top:2px solid #334155}tr.total-row td{font-weight:700;padding:12px 6px}
+.chart-area{height:200px;display:flex;align-items:flex-end;gap:3px;padding:0 4px;margin:10px 0}
+.chart-col{flex:1;display:flex;gap:1px;align-items:flex-end;justify-content:center}
+.chart-col .bar{flex:1;max-width:16px;border-radius:3px 3px 0 0}
+.chart-labels{display:flex;gap:3px;padding:4px}
+.chart-labels span{flex:1;text-align:center;font-size:8px;color:#64748b}
+.chart-legend{display:flex;gap:16px;justify-content:center;margin-top:6px}
+.chart-legend span{font-size:10px;color:#94a3b8;display:flex;align-items:center;gap:4px}
+.chart-legend .dot{width:10px;height:10px;border-radius:2px}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin:14px 0}
+.metric-card{background:#0f172a;border-radius:8px;padding:14px;border:1px solid #334155}
+.metric-card h4{font-size:10px;color:#64748b;margin-bottom:6px}.metric-card .val{font-size:18px;font-weight:700}
+.metric-card .sub{font-size:10px;color:#64748b;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>Business Plan — Vertical Idiomas | Próximos 12 Meses</h1>
+<p>Jun/2026 a Mai/2027 | Pós-reestruturação | Base: 748 assinaturas ativas, MRR R$ 497k</p>
+</div>
+<div class="container">
+
+<div class="tiles">
+<div class="tile green"><h4>MRR Atual</h4><div class="val" id="t-mrr">R$ 497k</div><div class="sub">748 assinaturas ativas</div></div>
+<div class="tile green"><h4>Receita 12 meses</h4><div class="val" id="t-rec12">—</div><div class="sub">Projetada</div></div>
+<div class="tile blue"><h4>Resultado 12 meses</h4><div class="val" id="t-res12">—</div><div class="sub">Receita - Despesa</div></div>
+<div class="tile amber"><h4>MRR Mês 12</h4><div class="val" id="t-mrr12">—</div><div class="sub">Projetado Mai/2027</div></div>
+<div class="tile blue"><h4>Alunos Mês 12</h4><div class="val" id="t-subs12">—</div><div class="sub">Assinaturas ativas</div></div>
+</div>
+
+<div class="section">
+<h2>Métricas Base (dados reais)</h2>
+<div class="metrics-grid">
+<div class="metric-card"><h4>Ticket Médio Community 12m</h4><div class="val v-green">R$ 4.466</div><div class="sub">MRR/aluno: R$ 372</div></div>
+<div class="metric-card"><h4>Ticket Médio Flow 12m</h4><div class="val v-green">R$ 4.508</div><div class="sub">MRR/aluno: R$ 376</div></div>
+<div class="metric-card"><h4>Ticket Médio Private</h4><div class="val v-green">R$ 12.466</div><div class="sub">MRR/aluno: R$ 1.558 (8 meses)</div></div>
+<div class="metric-card"><h4>Ticket Médio Espanhol</h4><div class="val v-amber">R$ 2.085</div><div class="sub">MRR/aluno: R$ 174</div></div>
+<div class="metric-card"><h4>Vendas Média Histórica</h4><div class="val v-blue">149/mês</div><div class="sub">Jul/25 a Abr/26</div></div>
+<div class="metric-card"><h4>Churn Médio</h4><div class="val v-green">14/mês</div><div class="sub">~1.9% — baixo!</div></div>
+<div class="metric-card"><h4>B2B Contratos Ativos</h4><div class="val v-blue">78</div><div class="sub">R$ 992k total (FAAP, Palmares, etc)</div></div>
+<div class="metric-card"><h4>Despesa Pós-Cortes</h4><div class="val v-amber">R$ 465k/mês</div><div class="sub">Base fixa + vendedores novos</div></div>
+</div>
+</div>
+
+<div class="section">
+<h2>Projeção Receita vs Despesa (12 meses)</h2>
+<div class="chart-area" id="chart"></div>
+<div class="chart-labels" id="chart-labels"></div>
+<div class="chart-legend">
+<span><div class="dot" style="background:#4ade80"></div>Receita</span>
+<span><div class="dot" style="background:#f87171"></div>Despesa</span>
+<span><div class="dot" style="background:#60a5fa"></div>Resultado</span>
+</div>
+</div>
+
+<div class="section">
+<h2>Projeção Mensal Detalhada</h2>
+<div style="overflow-x:auto">
+<table>
+<thead><tr>
+<th style="text-align:left">Mês</th>
+<th>Alunos</th><th>Community</th><th>Flow</th><th>Private</th><th>B2B</th><th>Espanhol</th><th>Total Vendas</th><th>Churn</th>
+<th>Receita</th><th>Despesa</th><th>Resultado</th>
+</tr></thead>
+<tbody id="plan-tbody"></tbody>
+</table>
+</div>
+</div>
+
+<div class="section">
+<h2>Metas de Vendas por Vendedor</h2>
+<table>
+<thead><tr><th style="text-align:left">Vendedor</th><th>Foco</th><th>Meta/mês</th><th>Ticket Médio</th><th>Receita/mês</th></tr></thead>
+<tbody>
+<tr><td>Gilberto Lucheti</td><td class="v-blue">B2B</td><td>4 contratos</td><td>R$ 10.000+</td><td class="v-green">R$ 40k+</td></tr>
+<tr><td>Fernanda Soares</td><td>B2C Community/Flow</td><td>30 vendas</td><td>R$ 4.500</td><td class="v-green">R$ 135k</td></tr>
+<tr><td>Rodrigo Guedes</td><td>B2C Community/Flow</td><td>25 vendas</td><td>R$ 4.500</td><td class="v-green">R$ 112k</td></tr>
+<tr><td>Carlos Moncada</td><td>B2C Community/Flow</td><td>25 vendas</td><td>R$ 4.500</td><td class="v-green">R$ 112k</td></tr>
+<tr><td>Novo B2C #1</td><td>B2C (ramp up)</td><td>15→25 vendas</td><td>R$ 4.500</td><td class="v-amber">R$ 67k→112k</td></tr>
+<tr><td>Novo B2C #2</td><td>B2C (ramp up)</td><td>15→25 vendas</td><td>R$ 4.500</td><td class="v-amber">R$ 67k→112k</td></tr>
+<tr style="background:#0f172a;font-weight:700"><td>TOTAL EQUIPE</td><td></td><td>~150→180/mês</td><td></td><td class="v-green">R$ 530k→670k/mês</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="section">
+<h2>Premissas e Riscos</h2>
+<table>
+<tr><td>Churn mantém-se em ~14/mês</td><td class="v-green">Histórico consistente</td><td><strong>Baixo risco</strong></td></tr>
+<tr><td>Novos vendedores atingem meta em 3 meses</td><td class="v-amber">Ramp up normal</td><td><strong>Médio risco</strong></td></tr>
+<tr><td>Ticket médio não cai</td><td class="v-green">Sem desconto adicional</td><td><strong>Baixo risco</strong></td></tr>
+<tr><td>Alumni fixo R$ 55k/mês</td><td class="v-dim">Contrato vigente</td><td><strong>Fixo</strong></td></tr>
+<tr><td>Aluguel fixo R$ 82k/mês</td><td class="v-dim">Contrato vigente</td><td><strong>Fixo</strong></td></tr>
+<tr><td>MKT migrado para cartão Better</td><td class="v-amber">R$ 43k/mês</td><td><strong>Controlável</strong></td></tr>
+<tr><td>Escala de professores</td><td class="v-amber">Acima de 900 alunos, custo marginal R$ 30/aluno</td><td><strong>Escalável</strong></td></tr>
+</table>
+</div>
+
+</div>
+<script src="bizplan_data.js"></script>
+<script>
+function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:0})}
+function fmtK(v){return Math.abs(v)>=1e6?"R$ "+(v/1e6).toFixed(2)+"M":Math.abs(v)>=1e3?"R$ "+(v/1e3).toFixed(0)+"k":fmt(v)}
+
+// Tiles
+var last=bizData[bizData.length-1];
+var totR=0,totD=0,totRes=0;bizData.forEach(function(d){totR+=d.receita;totD+=d.despesa;totRes+=d.resultado});
+document.getElementById("t-rec12").textContent=fmtK(totR);
+document.getElementById("t-res12").textContent=fmtK(totRes);
+document.getElementById("t-mrr12").textContent=fmtK(last.mrr);
+document.getElementById("t-subs12").textContent=last.subs.toLocaleString();
+
+// Chart
+var maxV=0;bizData.forEach(function(d){if(d.receita>maxV)maxV=d.receita});
+var ch="",cl="";
+bizData.forEach(function(d){
+    var hR=Math.max(d.receita/maxV*180,2);var hD=Math.max(d.despesa/maxV*180,2);var hRes=Math.max(Math.abs(d.resultado)/maxV*180,2);
+    ch+='<div class="chart-col"><div class="bar" style="height:'+hR+'px;background:#4ade80"></div><div class="bar" style="height:'+hD+'px;background:#f87171"></div></div>';
+    cl+='<span>'+d.m.split("/")[0]+'</span>';
+});
+document.getElementById("chart").innerHTML=ch;
+document.getElementById("chart-labels").innerHTML=cl;
+
+// Table
+var rows="";
+bizData.forEach(function(d){
+    var rc=d.resultado>=0?"v-green":"v-red";
+    rows+='<tr><td>'+d.m+'</td>';
+    rows+='<td class="v-blue">'+d.subs.toLocaleString()+'</td>';
+    rows+='<td>'+d.new_comm+'</td><td>'+d.new_flow+'</td><td>'+d.new_priv+'</td><td>'+d.new_b2b+'</td><td>'+d.new_esp+'</td>';
+    rows+='<td class="v-blue"><strong>'+d.new_total+'</strong></td>';
+    rows+='<td class="v-red">-'+d.churn+'</td>';
+    rows+='<td class="v-green">'+fmtK(d.receita)+'</td>';
+    rows+='<td class="v-red">'+fmtK(d.despesa)+'</td>';
+    rows+='<td class="'+rc+'"><strong>'+fmtK(d.resultado)+'</strong></td></tr>';
+});
+rows+='<tr class="total-row"><td>12 MESES</td><td class="v-blue">'+last.subs+'</td>';
+var tc=0,tf=0,tp=0,tb=0,te=0,tt=0;
+bizData.forEach(function(d){tc+=d.new_comm;tf+=d.new_flow;tp+=d.new_priv;tb+=d.new_b2b;te+=d.new_esp;tt+=d.new_total});
+rows+='<td>'+tc+'</td><td>'+tf+'</td><td>'+tp+'</td><td>'+tb+'</td><td>'+te+'</td><td class="v-blue"><strong>'+tt+'</strong></td>';
+rows+='<td class="v-red">-'+(14*12)+'</td>';
+rows+='<td class="v-green">'+fmtK(totR)+'</td><td class="v-red">'+fmtK(totD)+'</td><td class="v-green"><strong>'+fmtK(totRes)+'</strong></td></tr>';
+document.getElementById("plan-tbody").innerHTML=rows;
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Financeiro — Better Education</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#e2e8f0}
+.header{background:#1e293b;padding:20px 40px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:22px;color:#f8fafc}.header p{font-size:12px;color:#94a3b8;margin-top:2px}
+.nav{display:flex;gap:6px}
+.nav-btn{padding:8px 16px;border-radius:8px;border:1.5px solid #334155;background:transparent;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer}
+.nav-btn:hover,.nav-btn.active{background:#1e40af;color:white;border-color:#1e40af}
+.container{max-width:1500px;margin:0 auto;padding:20px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+@media(max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:#1e293b;border-radius:12px;padding:18px;border:1px solid #334155}
+.tile h3{font-size:9px;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px}
+.tile .value{font-size:26px;font-weight:700}.tile .sub{font-size:10px;color:#64748b;margin-top:4px}
+.tile.green .value{color:#4ade80}.tile.red .value{color:#f87171}
+.tile.blue .value{color:#60a5fa}.tile.amber .value{color:#fbbf24}
+.tile.purple .value{color:#c084fc}.tile.pink .value{color:#f472b6}
+.link-bar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.link-btn{padding:8px 16px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:#94a3b8;font-size:11px;text-decoration:none}
+.link-btn:hover{border-color:#3b82f6;color:#60a5fa}
+.section{background:#1e293b;border-radius:12px;padding:20px;margin:14px 0;border:1px solid #334155}
+.section h2{font-size:15px;color:#f8fafc;margin-bottom:14px}
+.chart-area{position:relative;height:220px;display:flex;align-items:flex-end;gap:4px;padding:0 4px}
+.chart-col{flex:1;display:flex;gap:2px;align-items:flex-end;justify-content:center;position:relative;cursor:pointer}
+.chart-col .bar{flex:1;max-width:18px;border-radius:3px 3px 0 0;min-height:1px}
+.chart-col .bar.rec{background:#4ade80}.chart-col .bar.desp{background:#f87171}
+.chart-col .flag-dot{position:absolute;top:-8px;right:2px;width:8px;height:8px;background:#fbbf24;border-radius:50%;border:1px solid #0f172a}
+.chart-labels{display:flex;gap:4px;padding:6px 4px 0}
+.chart-labels span{flex:1;text-align:center;font-size:8px;color:#64748b}
+.chart-legend{display:flex;gap:16px;justify-content:center;margin-top:8px}
+.chart-legend span{font-size:10px;color:#94a3b8;display:flex;align-items:center;gap:4px}
+.chart-legend .dot{width:10px;height:10px;border-radius:2px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{background:#0f172a}
+th{padding:10px 8px;text-align:right;color:#64748b;border-bottom:1px solid #334155;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:9px 8px;border-bottom:1px solid rgba(51,65,85,0.5);text-align:right;white-space:nowrap}
+td:first-child{text-align:left;font-weight:600;color:#f8fafc}
+tr:hover{background:#0f172a}
+tr.total-row{background:#0f172a;border-top:2px solid #334155}
+tr.total-row td{font-weight:700;padding:12px 8px}
+tr.has-flag td:first-child{position:relative;padding-left:16px}
+tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%;transform:translateY(-50%);width:6px;height:6px;background:#fbbf24;border-radius:50%}
+.v-green{color:#4ade80}.v-red{color:#f87171}.v-blue{color:#60a5fa}.v-amber{color:#fbbf24}.v-pink{color:#f472b6}.v-dim{color:#475569}
+.flag-icon{cursor:pointer;color:#fbbf24;font-size:14px;margin-left:4px}
+/* Modal */
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:100}
+.modal-bg.show{display:flex;align-items:center;justify-content:center}
+.modal{background:#1e293b;border-radius:12px;padding:24px;max-width:600px;width:90%;border:1px solid #334155;max-height:80vh;overflow-y:auto}
+.modal h2{font-size:16px;color:#f8fafc;margin-bottom:12px}.modal-close{float:right;cursor:pointer;font-size:20px;color:#94a3b8}
+.modal-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155;font-size:13px}
+.modal-item .name{color:#e2e8f0}.modal-item .val{color:#fbbf24;font-weight:700}
+</style>
+</head>
+<body>
+<div class="header">
+<div><h1>Dashboard Financeiro</h1><p>Better Education | Dados: Vindi + Pagar.me + Omie</p></div>
+<div class="nav">
+<button class="nav-btn active" onclick="setYear('',this)">Todos</button>
+<button class="nav-btn" onclick="setYear('2024',this)">2024</button>
+<button class="nav-btn" onclick="setYear('2025',this)">2025</button>
+<button class="nav-btn" onclick="setYear('2026',this)">2026</button>
+</div>
+</div>
+<div class="container">
+<div class="tiles" id="tiles"></div>
+<div class="link-bar">
+<a class="link-btn" href="receitas.html">Receitas (detalhe)</a>
+<a class="link-btn" href="despesas.html">Despesas (detalhe)</a>
+<a class="link-btn" href="notas.html">Notas Produto vs Servi&ccedil;o</a>
+<a class="link-btn" href="vendas.html" style="border-color:#5eead4">Planilha Comiss&atilde;o vs Plataformas</a>
+</div>
+<div class="section">
+<h2 id="chart-title">Receitas vs Despesas</h2>
+<div class="chart-area" id="chart"></div>
+<div class="chart-labels" id="chart-labels"></div>
+<div class="chart-legend">
+<span><div class="dot" style="background:#4ade80"></div>Receitas</span>
+<span><div class="dot" style="background:#f87171"></div>Despesas</span>
+<span><div class="dot" style="background:#fbbf24;border-radius:50%;width:8px;height:8px"></div>Despesa at&iacute;pica (clique)</span>
+</div>
+</div>
+<div class="section">
+<h2>Detalhamento Mensal</h2>
+<table><thead><tr>
+<th style="text-align:left">M&ecirc;s</th><th>Receitas</th><th>Bills</th><th>Despesas</th><th>Docs</th>
+<th>Estornos</th><th>CBK</th><th>Resultado</th><th>NFS-e</th><th>NF-e</th><th>Pendentes</th>
+</tr></thead><tbody id="tbody"></tbody></table>
+</div>
+
+<div class="section" style="border-color:#fbbf24">
+<h2 style="color:#fbbf24">&#9888; Diverg&ecirc;ncias 2026: ERP (Planilha) vs APIs (Vindi/Omie)</h2>
+<p style="font-size:11px;color:#94a3b8;margin-bottom:14px">O ERP financeiro (planilha) tem valores diferentes das APIs. Itens a investigar para 2024/2025.</p>
+<table>
+<thead><tr>
+<th style="text-align:left">M&ecirc;s</th>
+<th>ERP Receita</th><th>API Receita</th><th>Diff Receita</th>
+<th>ERP Despesa</th><th>API Despesa</th><th>Diff Despesa</th>
+</tr></thead>
+<tbody id="diff-tbody"></tbody>
+</table>
+<p style="font-size:10px;color:#64748b;margin-top:12px">
+<strong>Receitas:</strong> ERP inclui Pagar.me transfers + Cielo + clientes B2B diretos. API s&oacute; conta Vindi bills.<br>
+<strong>Despesas:</strong> ERP inclui cart&atilde;o corporativo Helen, itens de pessoal e despesas fora do Omie Contas a Pagar.<br>
+<strong>Jan/2026 Receita API > ERP:</strong> Vindi cobrou em Jan mas transfer&ecirc;ncia Pagar.me caiu em Dez/2025 no ERP.
+</p>
+</div>
+
+</div>
+
+<div class="modal-bg" id="modal-bg" onclick="closeModal()">
+<div class="modal" onclick="event.stopPropagation()">
+<span class="modal-close" onclick="closeModal()">&times;</span>
+<h2 id="modal-title"></h2>
+<div id="modal-body"></div>
+</div>
+</div>
+
+<script src="dashboard_data.js"></script>
+<script src="dashboard_flags.js"></script>
+<script src="dashboard_diffs.js"></script>
+<script>
+function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtK(v){if(Math.abs(v)>=1e6)return "R$ "+(v/1e6).toFixed(2)+"M";if(Math.abs(v)>=1e3)return "R$ "+(v/1e3).toFixed(1)+"k";return fmt(v)}
+
+var currentYear="";
+function setYear(y,btn){currentYear=y;document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});btn.classList.add("active");render()}
+
+function openFlag(m){
+    var f=dashFlags[m];
+    if(!f)return;
+    document.getElementById("modal-title").textContent="Despesas atípicas — "+m;
+    var h="<p style='color:#94a3b8;font-size:12px;margin-bottom:12px'>Itens acima de R$ 50k neste mês (investimentos, aquisições, pagamentos acumulados):</p>";
+    f.items.forEach(function(item){
+        var parts=item.split(": R$ ");
+        h+='<div class="modal-item"><span class="name">'+parts[0]+'</span><span class="val">R$ '+(parts[1]||"")+'</span></div>';
+    });
+    h+='<div class="modal-item" style="border:none;padding-top:12px"><span class="name" style="font-weight:700">Total atípico</span><span class="val">'+fmt(f.total)+'</span></div>';
+    document.getElementById("modal-body").innerHTML=h;
+    document.getElementById("modal-bg").classList.add("show");
+}
+function closeModal(){document.getElementById("modal-bg").classList.remove("show")}
+
+function render(){
+    var filtered=currentYear?dashData.filter(function(d){return d.y===currentYear}):dashData;
+    filtered=filtered.filter(function(d){return d.rec>0||d.desp>0||d.nfse>0||d.nfe>0});
+
+    var tR=0,tD=0,tE=0,tC=0,tP=0,tNs=0,tNe=0,tRes=0,nR=0,nD=0,nE=0,nC=0,nP=0,nNs=0,nNe=0;
+    filtered.forEach(function(d){tR+=d.rec;tD+=d.desp;tE+=d.est;tC+=d.chb;tP+=d.pend;tNs+=d.nfse;tNe+=d.nfe;tRes+=d.res;nR+=d.rec_n;nD+=d.desp_n;nE+=d.est_n;nC+=d.chb_n;nP+=d.pend_n;nNs+=d.nfse_n;nNe+=d.nfe_n});
+
+    document.getElementById("tiles").innerHTML=
+        '<div class="tile green"><h3>Receita Bruta (Vindi)</h3><div class="value">'+fmtK(tR)+'</div><div class="sub">'+nR+' faturas</div></div>'+
+        '<div class="tile red"><h3>Despesas (Omie)</h3><div class="value">'+fmtK(tD)+'</div><div class="sub">'+nD+' contas</div></div>'+
+        '<div class="tile pink"><h3>Estornos + CBK</h3><div class="value">'+fmtK(tE+tC)+'</div><div class="sub">'+nE+' est | '+nC+' cbk</div></div>'+
+        '<div class="tile '+(tRes>=0?"green":"red")+'"><h3>Resultado</h3><div class="value">'+fmtK(tRes)+'</div><div class="sub">Rec-Desp-Est-CBK</div></div>'+
+        '<div class="tile blue"><h3>NFS-e (Serviço)</h3><div class="value">'+fmtK(tNs)+'</div><div class="sub">'+nNs+' notas</div></div>'+
+        '<div class="tile purple"><h3>NF-e (Produto)</h3><div class="value">'+fmtK(tNe)+'</div><div class="sub">'+nNe+' pedidos</div></div>'+
+        '<div class="tile amber"><h3>Pendentes</h3><div class="value">'+fmtK(tP)+'</div><div class="sub">'+nP+' faturas</div></div>'+
+        '<div class="tile blue"><h3>Receita Líquida</h3><div class="value">'+fmtK(tR-tE-tC)+'</div><div class="sub">Bruta-Est-CBK</div></div>';
+
+    var maxVal=0;filtered.forEach(function(d){if(d.rec>maxVal)maxVal=d.rec;if(d.desp>maxVal)maxVal=d.desp});if(maxVal===0)maxVal=1;
+
+    var chartHtml="",labelsHtml="";
+    filtered.forEach(function(d){
+        var hR=Math.max((d.rec/maxVal)*190,1);var hD=Math.max((d.desp/maxVal)*190,1);
+        var hasFlag=dashFlags[d.m]?true:false;
+        var flagDot=hasFlag?'<div class="flag-dot" title="Despesa atípica"></div>':'';
+        chartHtml+='<div class="chart-col" onclick="openFlag(\''+d.m+'\')">'+flagDot+'<div class="bar rec" style="height:'+hR+'px"></div><div class="bar desp" style="height:'+hD+'px"></div></div>';
+        labelsHtml+='<span>'+d.m.split("/")[0]+'</span>';
+    });
+    document.getElementById("chart").innerHTML=chartHtml;
+    document.getElementById("chart-labels").innerHTML=labelsHtml;
+    document.getElementById("chart-title").textContent="Receitas vs Despesas"+(currentYear?" — "+currentYear:" — Jul/2024 a Mai/2026");
+
+    var rows="";
+    filtered.forEach(function(d){
+        var rc=d.res>=0?"v-green":"v-red";
+        var hasFlag=dashFlags[d.m]?true:false;
+        var flagHtml=hasFlag?'<span class="flag-icon" onclick="openFlag(\''+d.m+'\')" title="Clique para ver detalhes">⚠</span>':'';
+        rows+='<tr class="'+(hasFlag?"has-flag":"")+'">';
+        rows+='<td>'+d.m+flagHtml+'</td>';
+        rows+='<td class="v-green">'+fmtK(d.rec)+'</td><td class="v-dim">'+d.rec_n+'</td>';
+        rows+='<td class="v-red">'+fmtK(d.desp)+'</td><td class="v-dim">'+d.desp_n+'</td>';
+        rows+='<td class="'+(d.est>0?"v-pink":"v-dim")+'">'+(d.est>0?fmtK(d.est)+' ('+d.est_n+')':'-')+'</td>';
+        rows+='<td class="'+(d.chb>0?"v-pink":"v-dim")+'">'+(d.chb>0?fmtK(d.chb)+' ('+d.chb_n+')':'-')+'</td>';
+        rows+='<td class="'+rc+'">'+fmtK(d.res)+'</td>';
+        rows+='<td class="v-blue">'+fmtK(d.nfse)+'</td><td class="v-blue">'+fmtK(d.nfe)+'</td>';
+        rows+='<td class="'+(d.pend>0?"v-amber":"v-dim")+'">'+(d.pend>0?fmtK(d.pend)+' ('+d.pend_n+')':'-')+'</td></tr>';
+    });
+    rows+='<tr class="total-row"><td>TOTAL</td><td class="v-green">'+fmtK(tR)+'</td><td class="v-dim">'+nR+'</td><td class="v-red">'+fmtK(tD)+'</td><td class="v-dim">'+nD+'</td><td class="v-pink">'+fmtK(tE)+'</td><td class="v-pink">'+fmtK(tC)+'</td><td class="'+(tRes>=0?"v-green":"v-red")+'">'+fmtK(tRes)+'</td><td class="v-blue">'+fmtK(tNs)+'</td><td class="v-blue">'+fmtK(tNe)+'</td><td class="v-amber">'+fmtK(tP)+'</td></tr>';
+    document.getElementById("tbody").innerHTML=rows;
+}
+render();
+
+// Divergence table
+if (typeof dashDiffs !== "undefined") {
+    var drows = "";
+    var tER=0,tAR=0,tED=0,tAD=0;
+    dashDiffs.forEach(function(d) {
+        tER+=d.erp_rec;tAR+=d.api_rec;tED+=d.erp_desp;tAD+=d.api_desp;
+        var drCls = d.diff_rec > 0 ? "v-green" : "v-red";
+        var ddCls = d.diff_desp > 0 ? "v-red" : "v-green";
+        drows += "<tr><td style='text-align:left;font-weight:600;color:#f8fafc'>"+d.m+"</td>";
+        drows += "<td class='v-green'>"+fmtK(d.erp_rec)+"</td><td class='v-green'>"+fmtK(d.api_rec)+"</td><td class='"+drCls+"'>"+fmtK(d.diff_rec)+"</td>";
+        drows += "<td class='v-red'>"+fmtK(d.erp_desp)+"</td><td class='v-red'>"+fmtK(d.api_desp)+"</td><td class='"+ddCls+"'>"+fmtK(d.diff_desp)+"</td></tr>";
+    });
+    drows += "<tr class='total-row'><td style='text-align:left'>TOTAL</td>";
+    drows += "<td class='v-green'>"+fmtK(tER)+"</td><td class='v-green'>"+fmtK(tAR)+"</td><td class='"+(tER-tAR>=0?"v-green":"v-red")+"'>"+fmtK(tER-tAR)+"</td>";
+    drows += "<td class='v-red'>"+fmtK(tED)+"</td><td class='v-red'>"+fmtK(tAD)+"</td><td class='"+(tED-tAD>=0?"v-red":"v-green")+"'>"+fmtK(tED-tAD)+"</td></tr>";
+    document.getElementById("diff-tbody").innerHTML = drows;
+}
+
+</script>
+</body>
+</html>
