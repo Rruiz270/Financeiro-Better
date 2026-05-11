@@ -52,7 +52,7 @@ tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%
 /* Modal */
 .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:100}
 .modal-bg.show{display:flex;align-items:center;justify-content:center}
-.modal{background:#1e293b;border-radius:12px;padding:24px;max-width:600px;width:90%;border:1px solid #334155;max-height:80vh;overflow-y:auto}
+.modal{background:#1e293b;border-radius:12px;padding:24px;max-width:700px;width:90%;border:1px solid #334155;max-height:80vh;overflow-y:auto}
 .modal h2{font-size:16px;color:#f8fafc;margin-bottom:12px}.modal-close{float:right;cursor:pointer;font-size:20px;color:#94a3b8}
 .modal-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155;font-size:13px}
 .modal-item .name{color:#e2e8f0}.modal-item .val{color:#fbbf24;font-weight:700}
@@ -133,6 +133,7 @@ tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%
 <script src="dashboard_flags.js"></script>
 <script src="dashboard_diffs.js"></script>
 <script src="dashboard_divergences.js"></script>
+<script src="bma_data.js"></script>
 <script>
 function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtK(v){if(Math.abs(v)>=1e6)return "R$ "+(v/1e6).toFixed(2)+"M";if(Math.abs(v)>=1e3)return "R$ "+(v/1e3).toFixed(1)+"k";return fmt(v)}
@@ -168,6 +169,25 @@ function openDiverg(m){
     dv.items.forEach(function(item){
         var dc=item.diff>0?"#fbbf24":"#4ade80";
         h+='<tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 8px;color:#e2e8f0">'+item.forn.substring(0,28)+'</td><td style="padding:6px 8px;text-align:right;color:#f87171">'+fmtK(item.omie)+'</td><td style="padding:6px 8px;text-align:right;color:#60a5fa">'+fmtK(item.excel)+'</td><td style="padding:6px 8px;text-align:right;color:'+dc+';font-weight:700">'+fmtK(item.diff)+'</td><td style="padding:6px 8px;color:#94a3b8;font-size:10px">'+item.causa+'</td></tr>';
+    });
+    h+='</tbody></table>';
+    document.getElementById("modal-body").innerHTML=h;
+    document.getElementById("modal-bg").classList.add("show");
+}
+function openBma(m){
+    if(typeof bmaAll==="undefined")return;
+    var items=bmaAll.filter(function(d){return d.mes===m});
+    if(!items.length)return;
+    document.getElementById("modal-title").textContent="BMA Despesas — "+m;
+    var total=0;items.forEach(function(d){total+=d.valor_pago});
+    var byForn={};items.forEach(function(d){if(!byForn[d.fornecedor])byForn[d.fornecedor]={total:0,count:0,cats:{}};byForn[d.fornecedor].total+=d.valor_pago;byForn[d.fornecedor].count++;byForn[d.fornecedor].cats[d.categoria]=1});
+    var sorted=Object.entries(byForn).sort(function(a,b){return b[1].total-a[1].total});
+    var h='<p style="color:#94a3b8;font-size:12px;margin-bottom:12px">Folha, benefícios, impostos e encargos via BMA Soluções (Omie BMA).</p>';
+    h+='<div style="background:#0f172a;padding:10px 14px;border-radius:8px;text-align:center;margin-bottom:14px"><div style="font-size:10px;color:#64748b">TOTAL MÊS</div><div style="font-size:22px;font-weight:700;color:#a78bfa">'+fmtK(total)+'</div><div style="font-size:10px;color:#64748b">'+items.length+' lançamentos</div></div>';
+    h+='<table style="width:100%;font-size:12px;border-collapse:collapse">';
+    h+='<thead><tr style="border-bottom:1px solid #334155"><th style="text-align:left;padding:8px;color:#64748b">Fornecedor</th><th style="text-align:right;padding:8px;color:#64748b">Qtd</th><th style="text-align:right;padding:8px;color:#64748b">Valor</th></tr></thead><tbody>';
+    sorted.forEach(function(e){
+        h+='<tr style="border-bottom:1px solid #1e293b"><td style="padding:5px 8px;color:#e2e8f0">'+e[0].substring(0,40)+'</td><td style="padding:5px 8px;text-align:right;color:#94a3b8">'+e[1].count+'</td><td style="padding:5px 8px;text-align:right;color:#a78bfa;font-weight:600">'+fmtK(e[1].total)+'</td></tr>';
     });
     h+='</tbody></table>';
     document.getElementById("modal-body").innerHTML=h;
@@ -219,7 +239,7 @@ function render(){
         rows+='<td class="v-red" style="'+(hasDiverg?'cursor:pointer;text-decoration:underline':'')+'" '+(hasDiverg?'onclick="openDiverg(\''+d.m+'\')"':'')+'>'+fmtK(d.desp)+(hasDiverg?' <span style="font-size:8px;color:#fbbf24">ℹ</span>':'')+'</td><td class="v-dim">'+d.desp_n+'</td>';
         rows+='<td class="'+(d.est>0?"v-pink":"v-dim")+'">'+(d.est>0?fmtK(d.est)+' ('+d.est_n+')':'-')+'</td>';
         var bmaVal=d.bma_desp||0;var bmaN=d.bma_desp_n||0;
-        rows+='<td class="'+(bmaVal>0?"v-purple":"v-dim")+'">'+(bmaVal>0?fmtK(bmaVal)+' <span style="font-size:8px;color:#94a3b8">('+bmaN+')</span>':'-')+'</td>';
+        rows+='<td class="'+(bmaVal>0?"v-purple":"v-dim")+'" style="'+(bmaVal>0?'cursor:pointer;text-decoration:underline':'')+'" '+(bmaVal>0?'onclick="openBma(\''+d.m+'\')"':'')+' title="Clique para ver detalhes BMA">'+(bmaVal>0?fmtK(bmaVal)+' <span style="font-size:8px;color:#94a3b8">('+bmaN+')</span>':'-')+'</td>';
         rows+='<td class="'+rc+'">'+fmtK(d.res)+'</td>';
         rows+='<td class="v-blue">'+fmtK(d.nfse)+'</td><td class="v-blue">'+fmtK(d.nfe)+'</td>';
         rows+='<td class="'+(d.pend>0?"v-amber":"v-dim")+'">'+(d.pend>0?fmtK(d.pend)+' ('+d.pend_n+')':'-')+'</td></tr>';
