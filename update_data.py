@@ -163,7 +163,7 @@ def main():
     despesas = defaultdict(lambda: {'total':0,'count':0})
     for c in cp_raw:
         if c.get('status_titulo') == 'CANCELADO': continue
-        dt = c.get('data_emissao','') or c.get('data_vencimento','')
+        dt = c.get('data_previsao','') or c.get('data_vencimento','') or c.get('data_emissao','')
         y, m = parse_br_date(dt)
         if y and m:
             despesas[m]['total'] += c.get('valor_documento',0)
@@ -246,12 +246,12 @@ def main():
     desp_list = []
     for c in cp_raw:
         if c.get('status_titulo') == 'CANCELADO': continue
-        dt = c.get('data_emissao','') or c.get('data_vencimento','')
-        y, m = parse_br_date(dt)
+        dt_prev = c.get('data_previsao','') or c.get('data_vencimento','') or c.get('data_emissao','')
+        y, m = parse_br_date(dt_prev)
         if not y: continue
         forn = c.get('codigo_cliente_fornecedor')
         nome = cli_map.get(forn, {}).get('nome', str(forn))
-        desp_list.append({'data':dt,'mes':m or '','ano':y,'fornecedor':nome,'categoria':c.get('codigo_categoria',''),'valor_pago':round(c.get('valor_documento',0),2),'situacao':c.get('status_titulo',''),'projeto':'','grupo':'Geral'})
+        desp_list.append({'data':dt_prev,'data_emissao':c.get('data_emissao',''),'data_vencimento':c.get('data_vencimento',''),'data_previsao':c.get('data_previsao',''),'mes':m or '','ano':y,'fornecedor':nome,'categoria':c.get('codigo_categoria',''),'valor_pago':round(c.get('valor_documento',0),2),'situacao':c.get('status_titulo',''),'projeto':'','grupo':'Geral'})
     with open(os.path.join(output_dir, 'despesas_all_data.js'), 'w') as f:
         f.write('var data = ' + json.dumps(desp_list, ensure_ascii=True) + ';')
 

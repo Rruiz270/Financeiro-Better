@@ -82,12 +82,14 @@ tr:hover{background:#fef2f2}
 </div>
 <div class="breakdown"><h3>Detalhamento por Fornecedor</h3><div class="breakdown-grid" id="breakdown-grid"></div></div>
 <div class="table-wrap"><div class="table-scroll"><table><thead><tr>
-<th onclick="sortTable(0)" id="th0">Data</th>
-<th onclick="sortTable(1)" id="th1">Fornecedor</th>
-<th onclick="sortTable(2)" id="th2">Categoria</th>
-<th onclick="sortTable(3)" id="th3">M&ecirc;s</th>
-<th onclick="sortTable(4)" id="th4">Valor</th>
-<th onclick="sortTable(5)" id="th5">Status</th>
+<th onclick="sortTable(0)" id="th0">Emiss&atilde;o</th>
+<th onclick="sortTable(1)" id="th1">Vencimento</th>
+<th onclick="sortTable(2)" id="th2">Pgto/Prev.</th>
+<th onclick="sortTable(3)" id="th3">Fornecedor</th>
+<th onclick="sortTable(4)" id="th4">Categoria</th>
+<th onclick="sortTable(5)" id="th5">M&ecirc;s Pgto</th>
+<th onclick="sortTable(6)" id="th6">Valor</th>
+<th onclick="sortTable(7)" id="th7">Status</th>
 </tr></thead><tbody id="tbody"></tbody></table></div></div>
 </div>
 <script src="despesas_all_data.js"></script>
@@ -143,8 +145,8 @@ function render(){
 
     var rows=[],limit=Math.min(filtered.length,500);
     for(var i=0;i<limit;i++){var d=filtered[i];
-        rows.push("<tr><td style='white-space:nowrap'>"+d.data+"</td><td><strong>"+d.fornecedor+"</strong></td><td>"+d.categoria+"</td><td>"+d.mes+"</td><td class='vc'>"+fmt(d.valor_pago)+"</td><td>"+d.situacao+"</td></tr>")}
-    if(filtered.length>500)rows.push("<tr><td colspan='6' style='text-align:center;color:#6b7280;padding:12px'>Mostrando 500 de "+filtered.length+"</td></tr>");
+        rows.push("<tr><td style='white-space:nowrap'>"+(d.data_emissao||d.data)+"</td><td style='white-space:nowrap'>"+(d.data_vencimento||"")+"</td><td style='white-space:nowrap'>"+(d.data_previsao||d.data)+"</td><td><strong>"+d.fornecedor+"</strong></td><td>"+d.categoria+"</td><td>"+d.mes+"</td><td class='vc'>"+fmt(d.valor_pago)+"</td><td>"+d.situacao+"</td></tr>")}
+    if(filtered.length>500)rows.push("<tr><td colspan='8' style='text-align:center;color:#6b7280;padding:12px'>Mostrando 500 de "+filtered.length+"</td></tr>");
     document.getElementById("tbody").innerHTML=rows.join("")}
 
 ["search","filterMin","filterMax"].forEach(function(id){document.getElementById(id).addEventListener("input",render)});
@@ -154,7 +156,7 @@ var sortCol=-1,sortAsc=true;
 function sortTable(col){
     document.querySelectorAll("th").forEach(function(t){t.className=t.className.replace(/sorted-\w+/g,"")});
     if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true}
-    var keys=["data","fornecedor","categoria","mes","valor_pago","situacao"];
+    var keys=["data_emissao","data_vencimento","data_previsao","fornecedor","categoria","mes","valor_pago","situacao"];
     data.sort(function(a,b){var va=a[keys[col]],vb=b[keys[col]];if(typeof va==="number")return sortAsc?va-vb:vb-va;return sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va))});render()}
 render();
 </script>
