@@ -131,6 +131,7 @@ tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%
 <script src="dashboard_data.js"></script>
 <script src="dashboard_flags.js"></script>
 <script src="dashboard_diffs.js"></script>
+<script src="dashboard_divergences.js"></script>
 <script>
 function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtK(v){if(Math.abs(v)>=1e6)return "R$ "+(v/1e6).toFixed(2)+"M";if(Math.abs(v)>=1e3)return "R$ "+(v/1e3).toFixed(1)+"k";return fmt(v)}
@@ -148,6 +149,26 @@ function openFlag(m){
         h+='<div class="modal-item"><span class="name">'+parts[0]+'</span><span class="val">R$ '+(parts[1]||"")+'</span></div>';
     });
     h+='<div class="modal-item" style="border:none;padding-top:12px"><span class="name" style="font-weight:700">Total atípico</span><span class="val">'+fmt(f.total)+'</span></div>';
+    document.getElementById("modal-body").innerHTML=h;
+    document.getElementById("modal-bg").classList.add("show");
+}
+function openDiverg(m){
+    if(typeof dashDivergences==="undefined"||!dashDivergences[m])return;
+    var dv=dashDivergences[m];
+    document.getElementById("modal-title").textContent="Conciliacao Despesas — "+m;
+    var h='<p style="color:#94a3b8;font-size:12px;margin-bottom:12px">Omie Contas a Pagar vs Excel ERP (planilha financeiro). Diferenças por timing de pagamento e folha BMA.</p>';
+    h+='<div style="display:flex;gap:16px;margin-bottom:14px">';
+    h+='<div style="background:#0f172a;padding:10px 14px;border-radius:8px;flex:1;text-align:center"><div style="font-size:10px;color:#64748b">OMIE CP</div><div style="font-size:18px;font-weight:700;color:#f87171">'+fmtK(dv.omie_total)+'</div></div>';
+    h+='<div style="background:#0f172a;padding:10px 14px;border-radius:8px;flex:1;text-align:center"><div style="font-size:10px;color:#64748b">EXCEL ERP</div><div style="font-size:18px;font-weight:700;color:#60a5fa">'+fmtK(dv.excel_total)+'</div></div>';
+    h+='<div style="background:#0f172a;padding:10px 14px;border-radius:8px;flex:1;text-align:center"><div style="font-size:10px;color:#64748b">DIFERENCA</div><div style="font-size:18px;font-weight:700;color:'+(dv.diff_total>=0?'#fbbf24':'#4ade80')+'">'+fmtK(dv.diff_total)+'</div></div>';
+    h+='</div>';
+    h+='<table style="width:100%;font-size:12px;border-collapse:collapse">';
+    h+='<thead><tr style="border-bottom:1px solid #334155"><th style="text-align:left;padding:8px;color:#64748b">Fornecedor</th><th style="text-align:right;padding:8px;color:#64748b">Omie</th><th style="text-align:right;padding:8px;color:#64748b">Excel</th><th style="text-align:right;padding:8px;color:#64748b">Diff</th><th style="text-align:left;padding:8px;color:#64748b">Causa</th></tr></thead><tbody>';
+    dv.items.forEach(function(item){
+        var dc=item.diff>0?"#fbbf24":"#4ade80";
+        h+='<tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 8px;color:#e2e8f0">'+item.forn.substring(0,28)+'</td><td style="padding:6px 8px;text-align:right;color:#f87171">'+fmtK(item.omie)+'</td><td style="padding:6px 8px;text-align:right;color:#60a5fa">'+fmtK(item.excel)+'</td><td style="padding:6px 8px;text-align:right;color:'+dc+';font-weight:700">'+fmtK(item.diff)+'</td><td style="padding:6px 8px;color:#94a3b8;font-size:10px">'+item.causa+'</td></tr>';
+    });
+    h+='</tbody></table>';
     document.getElementById("modal-body").innerHTML=h;
     document.getElementById("modal-bg").classList.add("show");
 }
@@ -193,7 +214,8 @@ function render(){
         rows+='<tr class="'+(hasFlag?"has-flag":"")+'">';
         rows+='<td>'+d.m+flagHtml+'</td>';
         rows+='<td class="v-green">'+fmtK(d.rec)+'</td><td class="v-dim">'+d.rec_n+'</td>';
-        rows+='<td class="v-red">'+fmtK(d.desp)+'</td><td class="v-dim">'+d.desp_n+'</td>';
+        var hasDiverg=typeof dashDivergences!=="undefined"&&dashDivergences[d.m];
+        rows+='<td class="v-red" style="'+(hasDiverg?'cursor:pointer;text-decoration:underline':'')+'" '+(hasDiverg?'onclick="openDiverg(\''+d.m+'\')"':'')+'>'+fmtK(d.desp)+(hasDiverg?' <span style="font-size:8px;color:#fbbf24">ℹ</span>':'')+'</td><td class="v-dim">'+d.desp_n+'</td>';
         rows+='<td class="'+(d.est>0?"v-pink":"v-dim")+'">'+(d.est>0?fmtK(d.est)+' ('+d.est_n+')':'-')+'</td>';
         rows+='<td class="'+(d.bma>0?"v-amber":"v-dim")+'">'+(d.bma>0?fmtK(d.bma)+' <span style="font-size:8px;color:#94a3b8">(a confirmar)</span>':d.bma<0?fmtK(d.bma)+' <span style="font-size:8px;color:#94a3b8">(timing)</span>':'-')+'</td>';
         rows+='<td class="'+rc+'">'+fmtK(d.res)+'</td>';
