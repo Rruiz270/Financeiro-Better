@@ -2,14 +2,19 @@ name: Update Financial Data
 
 on:
   schedule:
-    - cron: '0 10 * * *'  # Daily at 7am BRT (10 UTC)
-  workflow_dispatch:  # Manual trigger
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-python@v5
         with:
