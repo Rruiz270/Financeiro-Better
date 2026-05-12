@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Better Education — Base de Alunos</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+
+/* Header */
+.header{background:#1e293b;padding:16px 30px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:20px;color:#f8fafc}
+.header .sub{font-size:11px;color:#64748b;margin-top:2px}
+.header .back{color:#06b6d4;text-decoration:none;font-size:12px;opacity:0.7;transition:opacity 0.2s}
+.header .back:hover{opacity:1}
+
+/* Container */
+.container{max-width:1400px;margin:0 auto;padding:24px 20px}
+
+/* Summary cards */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;text-align:center;transition:border-color 0.2s}
+.card:hover{border-color:#06b6d4}
+.card .val{font-size:28px;font-weight:700;margin-bottom:2px}
+.card .lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px}
+.card.cyan .val{color:#06b6d4}
+.card.green .val{color:#4ade80}
+.card.red .val{color:#f87171}
+.card.amber .val{color:#fbbf24}
+.card.purple .val{color:#c084fc}
+.card.blue .val{color:#60a5fa}
+
+/* Modalidade breakdown */
+.mod-section{margin-bottom:24px}
+.mod-section h2{font-size:13px;text-transform:uppercase;color:#64748b;letter-spacing:1px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #334155}
+.mod-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.mod-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px;text-align:center;border-left:3px solid #06b6d4}
+.mod-card .val{font-size:22px;font-weight:700;color:#06b6d4}
+.mod-card .lbl{font-size:10px;color:#94a3b8;margin-top:2px}
+
+/* Filters */
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center}
+.filters input,.filters select{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:12px;outline:none;transition:border-color 0.2s}
+.filters input:focus,.filters select:focus{border-color:#06b6d4}
+.filters input{flex:1;min-width:200px;max-width:350px}
+.filters select{min-width:130px}
+.filter-count{font-size:11px;color:#64748b;margin-left:auto}
+.filter-btn{background:transparent;border:1px solid #334155;border-radius:8px;padding:8px 14px;color:#06b6d4;font-size:11px;cursor:pointer;transition:all 0.2s}
+.filter-btn:hover{border-color:#06b6d4;background:#083344}
+.filter-btn.active{background:#083344;border-color:#06b6d4}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid #334155;padding-bottom:0}
+.tab{padding:8px 16px;font-size:12px;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;background:transparent;border-top:none;border-left:none;border-right:none}
+.tab:hover{color:#e2e8f0}
+.tab.active{color:#06b6d4;border-bottom-color:#06b6d4}
+.tab .count{font-size:10px;background:#334155;padding:1px 6px;border-radius:8px;margin-left:4px}
+
+/* Table */
+.table-wrap{overflow-x:auto;margin-bottom:24px;border:1px solid #334155;border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{background:#1e293b;position:sticky;top:0;z-index:2}
+th{padding:10px 12px;text-align:left;color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #334155;cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{color:#06b6d4}
+th.sorted-asc::after{content:" \\2191";color:#06b6d4}
+th.sorted-desc::after{content:" \\2193";color:#06b6d4}
+td{padding:8px 12px;border-bottom:1px solid #1e293b;white-space:nowrap}
+tr{transition:background 0.1s}
+tr:hover{background:#1e293b}
+tr.clickable{cursor:pointer}
+
+/* Status badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.badge-ativo{background:#052e16;color:#4ade80}
+.badge-cancelado{background:#450a0a;color:#fca5a5}
+.badge-expirado{background:#451a03;color:#fbbf24}
+.badge-concluido{background:#172554;color:#60a5fa}
+
+/* Source badges */
+.src-badge{display:inline-block;padding:1px 5px;border-radius:6px;font-size:9px;font-weight:500;margin-left:2px}
+.src-planilha{background:#1e3a5f;color:#60a5fa}
+.src-vindi{background:#064e3b;color:#34d399}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;justify-content:center;align-items:flex-start;padding:40px 20px;overflow-y:auto}
+.modal-overlay.show{display:flex}
+.modal{background:#1e293b;border:1px solid #334155;border-radius:16px;max-width:800px;width:100%;padding:0;position:relative;max-height:90vh;overflow-y:auto}
+.modal-header{padding:20px 24px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#1e293b;z-index:1;border-radius:16px 16px 0 0}
+.modal-header h2{font-size:18px;color:#f8fafc}
+.modal-close{background:none;border:none;color:#64748b;font-size:24px;cursor:pointer;padding:4px 8px}
+.modal-close:hover{color:#f8fafc}
+.modal-body{padding:20px 24px}
+.modal-section{margin-bottom:20px}
+.modal-section h3{font-size:12px;text-transform:uppercase;color:#06b6d4;letter-spacing:1px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #334155}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.detail-item{padding:8px 12px;background:#0f172a;border-radius:8px}
+.detail-item .dlbl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px}
+.detail-item .dval{font-size:13px;color:#f8fafc;margin-top:2px}
+
+.sale-card{background:#0f172a;border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid #06b6d4}
+.sale-card .sale-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sale-card .sale-prod{font-size:13px;font-weight:600;color:#f8fafc}
+.sale-card .sale-date{font-size:11px;color:#64748b}
+.sale-card .sale-details{font-size:11px;color:#94a3b8}
+.sale-card .sale-details span{margin-right:12px}
+
+.bill-table{width:100%;font-size:11px;border-collapse:collapse}
+.bill-table th{text-align:left;padding:6px 8px;border-bottom:1px solid #334155;font-size:9px;color:#64748b}
+.bill-table td{padding:5px 8px;border-bottom:1px solid #0f172a;color:#94a3b8}
+.bill-table tr:hover{background:#0f172a}
+
+/* Placeholder section */
+.placeholder{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:16px;border-left:3px solid #fbbf24}
+.placeholder h3{font-size:14px;color:#fbbf24;margin-bottom:6px}
+.placeholder p{font-size:12px;color:#94a3b8;line-height:1.5}
+
+/* Export buttons */
+.export-bar{display:flex;gap:8px;margin-bottom:16px}
+.export-btn{background:#083344;border:1px solid #06b6d4;color:#22d3ee;border-radius:8px;padding:6px 14px;font-size:11px;cursor:pointer;transition:all 0.2s}
+.export-btn:hover{background:#06b6d4;color:#0f172a}
+
+/* Footer */
+.footer{text-align:center;padding:30px;color:#475569;font-size:10px}
+
+/* Responsive */
+@media(max-width:768px){
+ .summary{grid-template-columns:repeat(3,1fr)}
+ .filters{flex-direction:column}
+ .filters input{max-width:100%}
+ .detail-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div>
+<h1>Base de Alunos</h1>
+<div class="sub">Consolidado: Planilha de Vendas + Vindi API | <span id="total-label">0</span> alunos mapeados</div>
+</div>
+<a href="index.html" class="back">Voltar ao Painel</a>
+</div>
+
+<div class="container">
+
+<!-- Summary Cards -->
+<div class="summary" id="summary-cards">
+<div class="card cyan"><div class="val" id="s-total">-</div><div class="lbl">Total Alunos</div></div>
+<div class="card green"><div class="val" id="s-ativos">-</div><div class="lbl">Ativos</div></div>
+<div class="card red"><div class="val" id="s-cancelados">-</div><div class="lbl">Cancelados</div></div>
+<div class="card amber"><div class="val" id="s-expirados">-</div><div class="lbl">Expirados</div></div>
+<div class="card purple"><div class="val" id="s-renovacoes">-</div><div class="lbl">Renovacoes</div></div>
+<div class="card blue"><div class="val" id="s-total-all">-</div><div class="lbl">Total (incl. Vindi)</div></div>
+</div>
+
+<!-- Modalidade Breakdown -->
+<div class="mod-section">
+<h2>Distribuicao por Modalidade</h2>
+<div class="mod-cards" id="mod-cards"></div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+<button class="tab active" data-tab="todos" id="tab-todos">Todos <span class="count" id="tc-todos">0</span></button>
+<button class="tab" data-tab="ativos" id="tab-ativos">Ativos <span class="count" id="tc-ativos">0</span></button>
+<button class="tab" data-tab="cancelados" id="tab-cancelados">Cancelados <span class="count" id="tc-cancelados">0</span></button>
+<button class="tab" data-tab="expirados" id="tab-expirados">Expirados <span class="count" id="tc-expirados">0</span></button>
+<button class="tab" data-tab="renovacoes" id="tab-renovacoes">Renovacoes <span class="count" id="tc-renovacoes">0</span></button>
+<button class="tab" data-tab="vindi-only" id="tab-vindi">Apenas Vindi <span class="count" id="tc-vindi">0</span></button>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+<input type="text" id="search" placeholder="Buscar por nome, CPF, email...">
+<select id="filter-modalidade">
+<option value="">Todas Modalidades</option>
+<option value="Community">Community</option>
+<option value="Community Flow">Community Flow</option>
+<option value="Espanhol">Espanhol</option>
+<option value="Private">Private</option>
+<option value="In-Company">In-Company</option>
+</select>
+<select id="filter-tipo">
+<option value="">PF & PJ</option>
+<option value="PF">Pessoa Fisica</option>
+<option value="PJ">Pessoa Juridica</option>
+</select>
+<select id="filter-fonte">
+<option value="">Todas Fontes</option>
+<option value="planilha">Planilha</option>
+<option value="vindi">Vindi</option>
+<option value="ambos">Ambos</option>
+</select>
+<div class="filter-count" id="filter-count">0 de 0</div>
+</div>
+
+<!-- Export -->
+<div class="export-bar">
+<button class="export-btn" onclick="exportCSV()">Exportar CSV</button>
+<button class="export-btn" onclick="exportPortal()">Exportar para Portal</button>
+</div>
+
+<!-- Table -->
+<div class="table-wrap" style="max-height:600px;overflow-y:auto">
+<table>
+<thead>
+<tr>
+<th data-col="nome">Nome</th>
+<th data-col="cpf">CPF/CNPJ</th>
+<th data-col="email">Email</th>
+<th data-col="modalidade">Modalidade</th>
+<th data-col="nivel">Nivel</th>
+<th data-col="status">Status</th>
+<th data-col="data_inicio">Inicio</th>
+<th data-col="data_fim">Fim</th>
+<th data-col="total_gasto">Valor (R$)</th>
+<th data-col="renovacoes">Renov.</th>
+<th data-col="fonte">Fonte</th>
+</tr>
+</thead>
+<tbody id="table-body"></tbody>
+</table>
+</div>
+
+<!-- Placeholder sections -->
+<div class="mod-section" style="margin-top:24px">
+<h2>Dados Pendentes</h2>
+<div class="placeholder">
+<h3>In-Company</h3>
+<p>Dados a serem coletados: FAAP, Palmares Paulista. Contratos corporativos com aulas in loco para funcionarios. Informacoes detalhadas de turmas, horarios e participantes a serem adicionadas.</p>
+</div>
+<div class="placeholder">
+<h3>Aulas Particulares</h3>
+<p>Dados a serem coletados: Aulas Particulares. Agendamentos individuais com professores dedicados. Historico de aulas, frequencia e progresso a serem integrados.</p>
+</div>
+</div>
+
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div class="modal">
+<div class="modal-header">
+<h2 id="modal-name">Aluno</h2>
+<button class="modal-close" onclick="closeModal()">&times;</button>
+</div>
+<div class="modal-body" id="modal-body"></div>
+</div>
+</div>
+
+<div class="footer">
+Better Education &copy; 2026 | Base consolidada: Planilha de Vendas + Vindi API + Receitas<br>
+Gerado em <span id="gen-date"></span>
+</div>
+
+<script src="alunos_data.js"></script>
+<script>
+(function(){
+
+// ─── State ──────────────────────────────────────────────────────────────────
+var data = alunosData || [];
+var stats = alunosStats || {};
+var currentTab = "todos";
+var sortCol = "nome";
+var sortDir = "asc";
+var filtered = [];
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+function init() {
+ document.getElementById("gen-date").textContent = new Date().toLocaleDateString("pt-BR");
+ renderSummary();
+ renderModalidade();
+ updateTabCounts();
+ applyFilters();
+ bindEvents();
+}
+
+// ─── Summary ────────────────────────────────────────────────────────────────
+function renderSummary() {
+ var planilha = data.filter(function(a){return a.fonte_planilha});
+ var all = data;
+ var ativos = planilha.filter(function(a){return a.status==="Ativo"}).length;
+ var cancelados = planilha.filter(function(a){return a.status==="Cancelado"}).length;
+ var expirados = planilha.filter(function(a){return a.status==="Expirado"}).length;
+ var renovacoes = 0;
+ planilha.forEach(function(a){renovacoes += a.renovacoes});
+
+ document.getElementById("s-total").textContent = planilha.length.toLocaleString("pt-BR");
+ document.getElementById("s-ativos").textContent = ativos.toLocaleString("pt-BR");
+ document.getElementById("s-cancelados").textContent = cancelados.toLocaleString("pt-BR");
+ document.getElementById("s-expirados").textContent = expirados.toLocaleString("pt-BR");
+ document.getElementById("s-renovacoes").textContent = renovacoes.toLocaleString("pt-BR");
+ document.getElementById("s-total-all").textContent = all.length.toLocaleString("pt-BR");
+ document.getElementById("total-label").textContent = planilha.length.toLocaleString("pt-BR");
+}
+
+// ─── Modalidade cards ───────────────────────────────────────────────────────
+function renderModalidade() {
+ var planilha = data.filter(function(a){return a.fonte_planilha});
+ var mods = {};
+ planilha.forEach(function(a){
+  var m = a.modalidade || "Desconhecido";
+  mods[m] = (mods[m]||0) + 1;
+ });
+ var html = "";
+ var order = ["Community","Community Flow","Espanhol","Private","In-Company","Desconhecido"];
+ order.forEach(function(m){
+  if(mods[m]){
+   html += '<div class="mod-card"><div class="val">'+mods[m]+'</div><div class="lbl">'+m+'</div></div>';
+  }
+ });
+ document.getElementById("mod-cards").innerHTML = html;
+}
+
+// ─── Tab counts ─────────────────────────────────────────────────────────────
+function updateTabCounts() {
+ var planilha = data.filter(function(a){return a.fonte_planilha});
+ var vindiOnly = data.filter(function(a){return !a.fonte_planilha});
+ document.getElementById("tc-todos").textContent = planilha.length;
+ document.getElementById("tc-ativos").textContent = planilha.filter(function(a){return a.status==="Ativo"}).length;
+ document.getElementById("tc-cancelados").textContent = planilha.filter(function(a){return a.status==="Cancelado"}).length;
+ document.getElementById("tc-expirados").textContent = planilha.filter(function(a){return a.status==="Expirado"}).length;
+ var renov = planilha.filter(function(a){return a.renovacoes > 0});
+ document.getElementById("tc-renovacoes").textContent = renov.length;
+ document.getElementById("tc-vindi").textContent = vindiOnly.length;
+}
+
+// ─── Filter ─────────────────────────────────────────────────────────────────
+function applyFilters() {
+ var search = (document.getElementById("search").value || "").toLowerCase();
+ var modalidade = document.getElementById("filter-modalidade").value;
+ var tipo = document.getElementById("filter-tipo").value;
+ var fonte = document.getElementById("filter-fonte").value;
+
+ // Base set based on tab
+ var base;
+ if(currentTab === "todos") base = data.filter(function(a){return a.fonte_planilha});
+ else if(currentTab === "ativos") base = data.filter(function(a){return a.fonte_planilha && a.status==="Ativo"});
+ else if(currentTab === "cancelados") base = data.filter(function(a){return a.fonte_planilha && a.status==="Cancelado"});
+ else if(currentTab === "expirados") base = data.filter(function(a){return a.fonte_planilha && a.status==="Expirado"});
+ else if(currentTab === "renovacoes") base = data.filter(function(a){return a.fonte_planilha && a.renovacoes > 0});
+ else if(currentTab === "vindi-only") base = data.filter(function(a){return !a.fonte_planilha});
+ else base = data.filter(function(a){return a.fonte_planilha});
+
+ filtered = base.filter(function(a){
+  if(search) {
+   var hay = (a.nome + " " + a.cpf + " " + a.email + " " + a.celular + " " + (a.nivel||"")).toLowerCase();
+   if(hay.indexOf(search) === -1) return false;
+  }
+  if(modalidade && a.modalidade !== modalidade) return false;
+  if(tipo && a.tipo_cliente !== tipo) return false;
+  if(fonte === "planilha" && !a.fonte_planilha) return false;
+  if(fonte === "vindi" && !a.fonte_vindi) return false;
+  if(fonte === "ambos" && !(a.fonte_planilha && a.fonte_vindi)) return false;
+  return true;
+ });
+
+ // Sort
+ filtered.sort(function(a,b){
+  var va = a[sortCol] || "";
+  var vb = b[sortCol] || "";
+  if(typeof va === "number" && typeof vb === "number") {
+   return sortDir === "asc" ? va - vb : vb - va;
+  }
+  va = String(va).toLowerCase();
+  vb = String(vb).toLowerCase();
+  if(va < vb) return sortDir === "asc" ? -1 : 1;
+  if(va > vb) return sortDir === "asc" ? 1 : -1;
+  return 0;
+ });
+
+ renderTable();
+ var totalBase = currentTab === "vindi-only" ? data.filter(function(a){return !a.fonte_planilha}).length : data.filter(function(a){return a.fonte_planilha}).length;
+ document.getElementById("filter-count").textContent = filtered.length + " de " + totalBase;
+}
+
+// ─── Table ──────────────────────────────────────────────────────────────────
+function renderTable() {
+ var tbody = document.getElementById("table-body");
+ var limit = Math.min(filtered.length, 500); // limit for performance
+ var html = "";
+ for(var i = 0; i < limit; i++) {
+  var a = filtered[i];
+  var statusClass = "";
+  if(a.status === "Ativo") statusClass = "badge-ativo";
+  else if(a.status === "Cancelado") statusClass = "badge-cancelado";
+  else if(a.status === "Expirado") statusClass = "badge-expirado";
+  else statusClass = "badge-concluido";
+
+  var fonteHtml = "";
+  if(a.fonte_planilha) fonteHtml += '<span class="src-badge src-planilha">Planilha</span>';
+  if(a.fonte_vindi) fonteHtml += '<span class="src-badge src-vindi">Vindi</span>';
+
+  var valor = a.total_gasto > 0 ? "R$ " + a.total_gasto.toLocaleString("pt-BR",{minimumFractionDigits:2}) : (a.vindi_total > 0 ? "R$ " + a.vindi_total.toLocaleString("pt-BR",{minimumFractionDigits:2}) : "-");
+
+  html += '<tr class="clickable" onclick="openModal('+i+')">' +
+   '<td style="color:#f8fafc;font-weight:500">'+esc(a.nome)+'</td>' +
+   '<td>'+formatCPF(a.cpf)+'</td>' +
+   '<td style="color:#94a3b8">'+esc(a.email)+'</td>' +
+   '<td>'+esc(a.modalidade)+'</td>' +
+   '<td>'+esc(a.nivel||"-")+'</td>' +
+   '<td><span class="badge '+statusClass+'">'+a.status+'</span></td>' +
+   '<td>'+formatDate(a.data_inicio)+'</td>' +
+   '<td>'+formatDate(a.data_fim)+'</td>' +
+   '<td style="text-align:right">'+valor+'</td>' +
+   '<td style="text-align:center">'+(a.renovacoes||0)+'</td>' +
+   '<td>'+fonteHtml+'</td>' +
+   '</tr>';
+ }
+ if(limit < filtered.length) {
+  html += '<tr><td colspan="11" style="text-align:center;color:#64748b;padding:12px">Mostrando '+limit+' de '+filtered.length+' registros</td></tr>';
+ }
+ tbody.innerHTML = html;
+}
+
+// ─── Modal ──────────────────────────────────────────────────────────────────
+window.openModal = function(idx) {
+ var a = filtered[idx];
+ if(!a) return;
+ document.getElementById("modal-name").textContent = a.nome;
+
+ var statusClass = "";
+ if(a.status === "Ativo") statusClass = "badge-ativo";
+ else if(a.status === "Cancelado") statusClass = "badge-cancelado";
+ else if(a.status === "Expirado") statusClass = "badge-expirado";
+ else statusClass = "badge-concluido";
+
+ var html = '';
+
+ // Basic info
+ html += '<div class="modal-section"><h3>Informacoes Pessoais</h3><div class="detail-grid">';
+ html += detailItem("Nome", a.nome);
+ html += detailItem("CPF/CNPJ", formatCPF(a.cpf) || "-");
+ html += detailItem("Tipo Doc", a.tipo_doc);
+ html += detailItem("Email", a.email || "-");
+ html += detailItem("Celular", a.celular || "-");
+ html += detailItem("Endereco", a.endereco || "-");
+ html += '</div></div>';
+
+ // Course info
+ html += '<div class="modal-section"><h3>Curso</h3><div class="detail-grid">';
+ html += detailItem("Status", '<span class="badge '+statusClass+'">'+a.status+'</span>');
+ html += detailItem("Modalidade", a.modalidade);
+ html += detailItem("Nivel", a.nivel || "-");
+ html += detailItem("Produto", a.produto_principal || "-");
+ html += detailItem("Inicio", formatDate(a.data_inicio));
+ html += detailItem("Fim", formatDate(a.data_fim));
+ html += detailItem("Contrato Ativo", a.contrato_ativo ? "Sim" : "Nao");
+ html += detailItem("Renovacoes", a.renovacoes || 0);
+ html += detailItem("Aulas Remanescentes", a.aulas_remanescentes || 0);
+ if(a.cancelou) {
+  html += detailItem("Cancelamento", "Sim - " + formatDate(a.data_cancelamento));
+ }
+ html += '</div></div>';
+
+ // Financial
+ html += '<div class="modal-section"><h3>Financeiro</h3><div class="detail-grid">';
+ html += detailItem("Total Gasto (Planilha)", a.total_gasto > 0 ? "R$ " + a.total_gasto.toLocaleString("pt-BR",{minimumFractionDigits:2}) : "-");
+ html += detailItem("Vindi Bills", a.vindi_bills || 0);
+ html += detailItem("Vindi Total", a.vindi_total > 0 ? "R$ " + a.vindi_total.toLocaleString("pt-BR",{minimumFractionDigits:2}) : "-");
+ html += detailItem("Vindi Ultimo Pagamento", formatDate(a.vindi_last_payment));
+ html += '</div></div>';
+
+ // Purchase history (vendas)
+ if(a.vendas && a.vendas.length > 0) {
+  html += '<div class="modal-section"><h3>Historico de Vendas (Planilha)</h3>';
+  a.vendas.forEach(function(v){
+   var cancelTag = v.cancelamento ? ' <span class="badge badge-cancelado">Cancelado</span>' : '';
+   html += '<div class="sale-card">';
+   html += '<div class="sale-header"><span class="sale-prod">'+esc(v.produto || "Sem produto")+cancelTag+'</span><span class="sale-date">'+formatDate(v.data_venda)+'</span></div>';
+   html += '<div class="sale-details">';
+   html += '<span>Valor: R$ '+(v.valor||0).toLocaleString("pt-BR",{minimumFractionDigits:2})+'</span>';
+   html += '<span>Renovacao: '+esc(v.renovacao||"-")+'</span>';
+   html += '<span>Vendedor: '+esc(v.vendedor||"-")+'</span>';
+   html += '<span>Forma: '+esc(v.forma||"-")+'</span>';
+   if(v.duracao) html += '<span>Duracao: '+v.duracao+' meses</span>';
+   html += '</div></div>';
+  });
+  html += '</div>';
+ }
+
+ // Vindi bill detail
+ if(a.vindi_bill_detail && a.vindi_bill_detail.length > 0) {
+  html += '<div class="modal-section"><h3>Historico Vindi ('+a.vindi_bill_detail.length+' registros)</h3>';
+  html += '<div style="max-height:250px;overflow-y:auto"><table class="bill-table"><thead><tr><th>Data</th><th>Valor</th><th>Situacao</th><th>Mes</th><th>Categoria</th></tr></thead><tbody>';
+  // Show most recent first
+  var bills = a.vindi_bill_detail.slice().reverse();
+  var showBills = bills.slice(0, 50);
+  showBills.forEach(function(b){
+   html += '<tr><td>'+formatDate(b.data)+'</td><td>R$ '+(b.valor||0).toLocaleString("pt-BR",{minimumFractionDigits:2})+'</td><td>'+esc(b.situacao||"-")+'</td><td>'+esc(b.mes||"-")+'</td><td>'+esc(b.categoria||"-")+'</td></tr>';
+  });
+  if(bills.length > 50) {
+   html += '<tr><td colspan="5" style="text-align:center;color:#64748b">+'+(bills.length-50)+' registros anteriores</td></tr>';
+  }
+  html += '</tbody></table></div></div>';
+ }
+
+ // Sources
+ html += '<div class="modal-section"><h3>Fontes</h3><div class="detail-grid">';
+ html += detailItem("Planilha de Vendas", a.fonte_planilha ? '<span class="src-badge src-planilha">Sim</span>' : "Nao");
+ html += detailItem("Vindi API", a.fonte_vindi ? '<span class="src-badge src-vindi">Sim</span>' : "Nao");
+ html += '</div></div>';
+
+ document.getElementById("modal-body").innerHTML = html;
+ document.getElementById("modal-overlay").classList.add("show");
+ document.body.style.overflow = "hidden";
+};
+
+window.closeModal = function() {
+ document.getElementById("modal-overlay").classList.remove("show");
+ document.body.style.overflow = "";
+};
+
+// ─── Exports ────────────────────────────────────────────────────────────────
+window.exportCSV = function() {
+ var headers = ["Nome","CPF","Email","Celular","Modalidade","Nivel","Status","Data Inicio","Data Fim","Total Gasto","Renovacoes","Tipo","Fonte"];
+ var rows = [headers.join(",")];
+ filtered.forEach(function(a){
+  var fonte = [];
+  if(a.fonte_planilha) fonte.push("Planilha");
+  if(a.fonte_vindi) fonte.push("Vindi");
+  rows.push([
+   '"'+esc(a.nome)+'"',
+   a.cpf,
+   a.email,
+   a.celular,
+   a.modalidade,
+   a.nivel||"",
+   a.status,
+   a.data_inicio,
+   a.data_fim,
+   a.total_gasto||a.vindi_total||0,
+   a.renovacoes||0,
+   a.tipo_cliente,
+   fonte.join("+")
+  ].join(","));
+ });
+ var blob = new Blob(["﻿"+rows.join("\n")], {type:"text/csv;charset=utf-8"});
+ var url = URL.createObjectURL(blob);
+ var link = document.createElement("a");
+ link.href = url;
+ link.download = "alunos_better_"+new Date().toISOString().slice(0,10)+".csv";
+ link.click();
+};
+
+window.exportPortal = function() {
+ var ativos = data.filter(function(a){return a.status==="Ativo" && a.fonte_planilha});
+ var headers = ["Nome","Email","CPF","Celular","Modalidade","Nivel","Status","Aulas Remanescentes"];
+ var rows = [headers.join(",")];
+ ativos.forEach(function(a){
+  rows.push([
+   '"'+esc(a.nome)+'"',
+   a.email,
+   a.cpf,
+   a.celular,
+   a.modalidade,
+   a.nivel||"",
+   a.status,
+   a.aulas_remanescentes||0
+  ].join(","));
+ });
+ var blob = new Blob(["﻿"+rows.join("\n")], {type:"text/csv;charset=utf-8"});
+ var url = URL.createObjectURL(blob);
+ var link = document.createElement("a");
+ link.href = url;
+ link.download = "alunos_portal_import_"+new Date().toISOString().slice(0,10)+".csv";
+ link.click();
+};
+
+// ─── Events ─────────────────────────────────────────────────────────────────
+function bindEvents() {
+ document.getElementById("search").addEventListener("input", debounce(applyFilters, 200));
+ document.getElementById("filter-modalidade").addEventListener("change", applyFilters);
+ document.getElementById("filter-tipo").addEventListener("change", applyFilters);
+ document.getElementById("filter-fonte").addEventListener("change", applyFilters);
+
+ // Tabs
+ document.querySelectorAll(".tab").forEach(function(tab){
+  tab.addEventListener("click", function(){
+   document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});
+   tab.classList.add("active");
+   currentTab = tab.getAttribute("data-tab");
+   applyFilters();
+  });
+ });
+
+ // Sort headers
+ document.querySelectorAll("th[data-col]").forEach(function(th){
+  th.addEventListener("click", function(){
+   var col = th.getAttribute("data-col");
+   if(sortCol === col) {
+    sortDir = sortDir === "asc" ? "desc" : "asc";
+   } else {
+    sortCol = col;
+    sortDir = "asc";
+   }
+   document.querySelectorAll("th").forEach(function(t){t.classList.remove("sorted-asc","sorted-desc")});
+   th.classList.add("sorted-" + sortDir);
+   applyFilters();
+  });
+ });
+
+ // ESC to close modal
+ document.addEventListener("keydown", function(e){
+  if(e.key === "Escape") closeModal();
+ });
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+function esc(s) {return s ? String(s).replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;") : "";}
+function formatCPF(cpf) {
+ if(!cpf) return "-";
+ cpf = String(cpf);
+ if(cpf.length === 11) return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,"$1.$2.$3-$4");
+ if(cpf.length === 14) return cpf.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,"$1.$2.$3/$4-$5");
+ return cpf;
+}
+function formatDate(d) {
+ if(!d || d === "-" || d === "None") return "-";
+ var parts = String(d).split("-");
+ if(parts.length === 3) return parts[2].substring(0,2)+"/"+parts[1]+"/"+parts[0];
+ return d;
+}
+function detailItem(label, value) {
+ return '<div class="detail-item"><div class="dlbl">'+label+'</div><div class="dval">'+value+'</div></div>';
+}
+function debounce(fn, ms) {
+ var timer;
+ return function(){
+  clearTimeout(timer);
+  timer = setTimeout(fn, ms);
+ };
+}
+
+init();
+})();
+</script>
+</body>
+</html>
