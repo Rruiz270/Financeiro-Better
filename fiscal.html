@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estratégia Fiscal & DRE — Better Education</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.header{background:#1e293b;padding:20px 40px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.header h1{font-size:22px;color:#f8fafc}.header h1 span{color:#f97316}
+.header p{font-size:12px;color:#94a3b8;margin-top:2px}
+.nav{display:flex;gap:6px;flex-wrap:wrap}
+.nav-btn{padding:8px 16px;border-radius:8px;border:1.5px solid #334155;background:transparent;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer}
+.nav-btn:hover,.nav-btn.active{background:#c2410c;color:white;border-color:#c2410c}
+.container{max-width:1500px;margin:0 auto;padding:20px}
+.back-link{display:inline-block;margin-bottom:16px;color:#f97316;font-size:12px;text-decoration:none;opacity:0.8}
+.back-link:hover{opacity:1}
+
+/* Summary cards */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
+.card{background:#1e293b;border-radius:12px;padding:18px;border:1px solid #334155}
+.card.accent{border-color:#f97316}
+.card h3{font-size:9px;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px}
+.card .value{font-size:26px;font-weight:700;color:#f97316}.card .sub{font-size:10px;color:#64748b;margin-top:4px}
+.card .value.green{color:#4ade80}.card .value.red{color:#f87171}.card .value.blue{color:#60a5fa}.card .value.amber{color:#fbbf24}
+
+/* Sections */
+.section{background:#1e293b;border-radius:12px;padding:20px;margin:14px 0;border:1px solid #334155}
+.section.accent-border{border-color:#f97316}
+.section h2{font-size:15px;color:#f8fafc;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section h2 .icon{color:#f97316}
+
+/* Rule box */
+.rule-box{background:#1c1917;border:1px solid #f97316;border-radius:12px;padding:20px;margin:14px 0}
+.rule-box h2{font-size:15px;color:#f97316;margin-bottom:12px}
+.rule-box ul{list-style:none;padding:0}
+.rule-box li{padding:6px 0;font-size:13px;color:#e2e8f0;border-bottom:1px solid rgba(249,115,22,0.15)}
+.rule-box li:last-child{border-bottom:none}
+.rule-box li .tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;margin-right:8px}
+.tag-free{background:#052e16;color:#4ade80}
+.tag-iss{background:#451a03;color:#fbbf24}
+.tag-ok{background:#172554;color:#60a5fa}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{background:#0f172a}
+th{padding:10px 8px;text-align:right;color:#64748b;border-bottom:1px solid #334155;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:9px 8px;border-bottom:1px solid rgba(51,65,85,0.5);text-align:right;white-space:nowrap}
+td:first-child{text-align:left;font-weight:600;color:#f8fafc}
+tr:hover{background:#0f172a}
+tr.total-row{background:#0f172a;border-top:2px solid #f97316}
+tr.total-row td{font-weight:700;padding:12px 8px}
+tr.year-row{background:rgba(249,115,22,0.05);border-top:2px solid #334155}
+tr.year-row td{font-weight:700;color:#f97316}
+.v-green{color:#4ade80}.v-red{color:#f87171}.v-blue{color:#60a5fa}.v-amber{color:#fbbf24}.v-orange{color:#f97316}.v-dim{color:#475569}
+.status-ok{color:#4ade80;font-weight:700}.status-bad{color:#f87171;font-weight:700}
+.badge-pend{display:inline-block;padding:2px 8px;border-radius:6px;font-size:9px;font-weight:600;background:#451a03;color:#fbbf24;margin-left:6px;vertical-align:middle}
+
+/* Recommendations */
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px}
+.rec-card{background:#0f172a;border:1px solid #334155;border-left:4px solid #f97316;border-radius:8px;padding:16px}
+.rec-card .num{font-size:24px;font-weight:800;color:#f97316;float:left;margin-right:12px;line-height:1}
+.rec-card p{font-size:12px;color:#e2e8f0;line-height:1.5}
+.rec-card .detail{font-size:10px;color:#64748b;margin-top:4px}
+
+/* Chart area */
+.chart-container{position:relative;height:200px;display:flex;align-items:flex-end;gap:3px;padding:0 4px;margin-top:12px}
+.chart-bar-group{flex:1;display:flex;gap:2px;align-items:flex-end;justify-content:center}
+.chart-bar-group .bar{flex:1;max-width:16px;border-radius:3px 3px 0 0;min-height:1px;transition:height 0.3s}
+.bar-nfse{background:#f97316}.bar-nfe{background:#60a5fa}
+.chart-labels{display:flex;gap:3px;padding:6px 4px 0}
+.chart-labels span{flex:1;text-align:center;font-size:8px;color:#64748b}
+.chart-legend{display:flex;gap:16px;justify-content:center;margin-top:8px}
+.chart-legend span{font-size:10px;color:#94a3b8;display:flex;align-items:center;gap:4px}
+.chart-legend .dot{width:10px;height:10px;border-radius:2px}
+
+.footer{text-align:center;padding:30px;color:#475569;font-size:10px}
+.scroll-x{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div>
+<h1><span>Estratégia Fiscal</span> & Tributária</h1>
+<p>Análise 50/50 Produto vs Serviço | ISS vs ICMS | DRE Simplificado</p>
+</div>
+<div class="nav">
+<button class="nav-btn active" onclick="setYear('',this)">Todos</button>
+<button class="nav-btn" onclick="setYear('2024',this)">2024</button>
+<button class="nav-btn" onclick="setYear('2025',this)">2025</button>
+<button class="nav-btn" onclick="setYear('2026',this)">2026</button>
+</div>
+</div>
+
+<div class="container">
+<a href="index.html" class="back-link">&larr; Voltar para Central Financeira</a>
+
+<!-- ========== SUMMARY CARDS ========== -->
+<div class="cards" id="summary-cards"></div>
+
+<!-- ========== NFS-e vs NF-e CHART ========== -->
+<div class="section accent-border">
+<h2><span class="icon">&#9878;</span> NFS-e vs NF-e — Evolução Mensal</h2>
+<div class="chart-container" id="chart"></div>
+<div class="chart-labels" id="chart-labels"></div>
+<div class="chart-legend">
+<span><div class="dot" style="background:#f97316"></div>NFS-e (Serviço)</span>
+<span><div class="dot" style="background:#60a5fa"></div>NF-e (Produto)</span>
+</div>
+</div>
+
+<!-- ========== REGRA 50/50 ========== -->
+<div class="rule-box">
+<h2>&#9881; Regra 50/50 — Fundamentação</h2>
+<ul>
+<li><span class="tag tag-free">ICMS DIFERIDO</span> Material didático não é tributado (ICMS diferido). Emitir como <strong>NF-e (Produto)</strong>.</li>
+<li><span class="tag tag-iss">ISS ~2%</span> Serviço de aula paga ISS ~2% em Cajamar. Emitir como <strong>NFS-e (Serviço)</strong>.</li>
+<li><span class="tag tag-ok">REGRA CPF</span> Vendas CPF (alunos regulares) devem ser <strong>50% produto + 50% serviço</strong>.</li>
+<li><span class="tag tag-ok">EXCEÇÃO</span> B2B (CNPJ) = 100% serviço é correto. Aulas Particulares = 100% serviço é correto.</li>
+<li><span class="tag tag-iss">PROBLEMA</span> Historicamente <strong>68,5% NFS-e vs 36,4% NF-e</strong> — sobre-faturamento de serviço gera ISS desnecessário.</li>
+</ul>
+</div>
+
+<!-- ========== MONTHLY TABLE ========== -->
+<div class="section">
+<h2><span class="icon">&#128202;</span> Análise Mensal — NFS-e vs NF-e</h2>
+<div class="scroll-x">
+<table id="monthly-table">
+<thead>
+<tr>
+<th>Mês</th>
+<th>Receitas</th>
+<th>NFS-e</th>
+<th>NFS-e %</th>
+<th>NF-e</th>
+<th>NF-e %</th>
+<th>Ratio</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="monthly-body"></tbody>
+</table>
+</div>
+</div>
+
+<!-- ========== IMPACT ANALYSIS ========== -->
+<div class="section accent-border">
+<h2><span class="icon">&#128176;</span> Impacto Financeiro — ISS Pago a Mais</h2>
+<p style="font-size:11px;color:#94a3b8;margin-bottom:14px">Cálculo: (NFS-e emitido - NFS-e ideal a 50%) × 2% ISS Cajamar</p>
+<div class="scroll-x">
+<table>
+<thead>
+<tr>
+<th>Ano</th>
+<th>NFS-e Emitido</th>
+<th>NFS-e Ideal (50%)</th>
+<th>Excesso Serviço</th>
+<th>ISS a Mais (2%)</th>
+</tr>
+</thead>
+<tbody id="impact-body"></tbody>
+</table>
+</div>
+</div>
+
+<!-- ========== RECOMMENDATIONS ========== -->
+<div class="section">
+<h2><span class="icon">&#9989;</span> Recomendações</h2>
+<div class="recs">
+<div class="rec-card">
+<div class="num">1</div>
+<p><strong>Corrigir split em todas as novas vendas CPF</strong> para 50% produto + 50% serviço.</p>
+<div class="detail">Aplicar imediatamente em todas as vendas a partir de hoje.</div>
+</div>
+<div class="rec-card">
+<div class="num">2</div>
+<p><strong>Revisão retroativa das 20 vendas</strong> com 100% serviço indevido.</p>
+<div class="detail">229 vendas analisadas: 9 B2B, 3 Private, 217 regulares — 20 com split incorreto.</div>
+</div>
+<div class="rec-card">
+<div class="num">3</div>
+<p><strong>Manter B2B e Aulas Particulares</strong> como 100% serviço (correto).</p>
+<div class="detail">9 vendas B2B (CNPJ) + 3 Aulas Particulares = exceções legítimas.</div>
+</div>
+<div class="rec-card">
+<div class="num">4</div>
+<p><strong>Meta: ratio NFS-e/NF-e = 1.0x</strong> (atualmente 1.88x).</p>
+<div class="detail">Monitorar mensalmente. Ratio ideal indica equilíbrio 50/50.</div>
+</div>
+</div>
+</div>
+
+<!-- ========== SALES BREAKDOWN ========== -->
+<div class="section">
+<h2><span class="icon">&#128269;</span> Diagnóstico das Vendas (Amostra 229 vendas)</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:8px">
+<div style="background:#0f172a;border-radius:8px;padding:16px;text-align:center">
+<div style="font-size:32px;font-weight:800;color:#f97316">229</div>
+<div style="font-size:10px;color:#64748b;text-transform:uppercase">Vendas Analisadas</div>
+</div>
+<div style="background:#0f172a;border-radius:8px;padding:16px;text-align:center">
+<div style="font-size:32px;font-weight:800;color:#4ade80">197</div>
+<div style="font-size:10px;color:#64748b;text-transform:uppercase">50/50 Correto (90.8%)</div>
+</div>
+<div style="background:#0f172a;border-radius:8px;padding:16px;text-align:center">
+<div style="font-size:32px;font-weight:800;color:#f87171">20</div>
+<div style="font-size:10px;color:#64748b;text-transform:uppercase">100% Serviço Incorreto</div>
+</div>
+<div style="background:#0f172a;border-radius:8px;padding:16px;text-align:center">
+<div style="font-size:32px;font-weight:800;color:#60a5fa">12</div>
+<div style="font-size:10px;color:#64748b;text-transform:uppercase">Exceções (B2B + Private)</div>
+</div>
+</div>
+<div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+<div style="flex:1;min-width:200px;background:#0f172a;border-radius:8px;padding:12px;border-left:3px solid #f97316">
+<div style="font-size:10px;color:#64748b;text-transform:uppercase;margin-bottom:4px">Renovações vs Novos</div>
+<div style="font-size:13px"><span style="color:#f97316;font-weight:700">118</span> <span style="color:#64748b">renovações</span> &nbsp;|&nbsp; <span style="color:#60a5fa;font-weight:700">109</span> <span style="color:#64748b">novos alunos</span></div>
+</div>
+<div style="flex:1;min-width:200px;background:#0f172a;border-radius:8px;padding:12px;border-left:3px solid #f97316">
+<div style="font-size:10px;color:#64748b;text-transform:uppercase;margin-bottom:4px">CPFs com Múltiplas Compras</div>
+<div style="font-size:13px"><span style="color:#f97316;font-weight:700">5</span> <span style="color:#64748b">CPFs compraram mais de 1 vez</span></div>
+</div>
+</div>
+</div>
+
+<!-- ========== DRE SIMPLIFICADO ========== -->
+<div class="section accent-border">
+<h2><span class="icon">&#128200;</span> DRE Simplificado (Mensal)</h2>
+<p style="font-size:11px;color:#94a3b8;margin-bottom:14px">Demonstração do Resultado do Exercício com dados Vindi + Omie + BMA</p>
+<div class="scroll-x">
+<table id="dre-table">
+<thead>
+<tr>
+<th>Linha</th>
+<th id="dre-headers"></th>
+</tr>
+</thead>
+<tbody id="dre-body"></tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<div class="footer">
+Better Education &copy; 2026 | Estrat&eacute;gia Fiscal & DRE<br>
+Dados: Vindi API + Omie API + BMA Omie API | Atualiza&ccedil;&atilde;o di&aacute;ria
+</div>
+
+<script src="dashboard_data.js"></script>
+<script src="bma_data.js"></script>
+<script>
+// ===== HELPERS =====
+const fmt = v => v >= 1e6 ? 'R$ '+(v/1e6).toFixed(2).replace('.',',')+'M'
+    : v >= 1e3 ? 'R$ '+(v/1e3).toFixed(1).replace('.',',')+'k'
+    : 'R$ '+v.toFixed(2).replace('.',',');
+const fmtFull = v => 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct = v => (v*100).toFixed(1).replace('.',',')+' %';
+
+// BMA lookup
+const bmaMap = {};
+if(typeof bmaDesp !== 'undefined') bmaDesp.forEach(b => bmaMap[b.m] = b.total);
+
+let currentYear = '';
+
+function setYear(y, btn) {
+    currentYear = y;
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    render();
+}
+
+function getFiltered() {
+    return dashData.filter(d => {
+        if(currentYear && d.y !== currentYear) return false;
+        // Only months with actual activity (some rec/desp/nfse/nfe)
+        return d.rec > 0 || d.nfse > 0 || d.nfe > 0;
+    });
+}
+
+function render() {
+    const data = getFiltered();
+    renderSummary(data);
+    renderChart(data);
+    renderMonthlyTable(data);
+    renderImpact();
+    renderDRE(data);
+}
+
+// ===== SUMMARY CARDS =====
+function renderSummary(data) {
+    const totalNfse = data.reduce((s,d) => s+d.nfse, 0);
+    const totalNfe = data.reduce((s,d) => s+d.nfe, 0);
+    const totalNotas = totalNfse + totalNfe;
+    const nfsePct = totalNotas > 0 ? totalNfse/totalNotas : 0;
+    const nfePct = totalNotas > 0 ? totalNfe/totalNotas : 0;
+    // Excess = NFS-e emitted - ideal 50%
+    const ideal50 = totalNotas * 0.5;
+    const excess = Math.max(0, totalNfse - ideal50);
+    const issOver = excess * 0.02;
+
+    document.getElementById('summary-cards').innerHTML = `
+        <div class="card accent">
+            <h3>NFS-e Total (Serviço)</h3>
+            <div class="value">${fmt(totalNfse)}</div>
+            <div class="sub">${pct(nfsePct)} da receita de notas</div>
+        </div>
+        <div class="card">
+            <h3>NF-e Total (Produto)</h3>
+            <div class="value blue">${fmt(totalNfe)}</div>
+            <div class="sub">${pct(nfePct)} da receita de notas</div>
+        </div>
+        <div class="card accent">
+            <h3>Excesso Serviço</h3>
+            <div class="value red">${fmt(excess)}</div>
+            <div class="sub">NFS-e acima do ideal 50%</div>
+        </div>
+        <div class="card accent">
+            <h3>ISS Pago a Mais</h3>
+            <div class="value amber">~${fmt(issOver)}</div>
+            <div class="sub">Taxa ISS 2% Cajamar</div>
+        </div>
+    `;
+}
+
+// ===== CHART =====
+function renderChart(data) {
+    const chart = document.getElementById('chart');
+    const labels = document.getElementById('chart-labels');
+    const maxVal = Math.max(...data.map(d => Math.max(d.nfse, d.nfe)), 1);
+
+    chart.innerHTML = data.map(d => {
+        const hNfse = (d.nfse / maxVal) * 180;
+        const hNfe = (d.nfe / maxVal) * 180;
+        return `<div class="chart-bar-group" title="${d.m}: NFS-e ${fmtFull(d.nfse)} | NF-e ${fmtFull(d.nfe)}">
+            <div class="bar bar-nfse" style="height:${hNfse}px"></div>
+            <div class="bar bar-nfe" style="height:${hNfe}px"></div>
+        </div>`;
+    }).join('');
+
+    labels.innerHTML = data.map(d => `<span>${d.m.substring(0,3)}</span>`).join('');
+}
+
+// ===== MONTHLY TABLE =====
+function renderMonthlyTable(data) {
+    const body = document.getElementById('monthly-body');
+    let totalRec=0, totalNfse=0, totalNfe=0;
+
+    body.innerHTML = data.map(d => {
+        const total = d.nfse + d.nfe;
+        const nfsePct = total > 0 ? d.nfse / total : 0;
+        const nfePct = total > 0 ? d.nfe / total : 0;
+        const ratio = d.nfe > 0 ? (d.nfse / d.nfe).toFixed(2) : '-';
+        const balanced = nfsePct >= 0.45 && nfsePct <= 0.55;
+        const status = total === 0 ? '<span class="v-dim">-</span>'
+            : balanced ? '<span class="status-ok">&check; OK</span>'
+            : '<span class="status-bad">&x26A0; Desequil&iacute;brio</span>';
+        totalRec += d.rec; totalNfse += d.nfse; totalNfe += d.nfe;
+
+        return `<tr>
+            <td>${d.m}</td>
+            <td>${fmtFull(d.rec)}</td>
+            <td class="v-orange">${fmtFull(d.nfse)}</td>
+            <td class="${nfsePct > 0.55 ? 'v-red' : nfsePct >= 0.45 ? 'v-green' : 'v-dim'}">${total > 0 ? pct(nfsePct) : '-'}</td>
+            <td class="v-blue">${fmtFull(d.nfe)}</td>
+            <td class="${nfePct < 0.45 ? 'v-red' : nfePct <= 0.55 ? 'v-green' : 'v-dim'}">${total > 0 ? pct(nfePct) : '-'}</td>
+            <td>${ratio}x</td>
+            <td>${status}</td>
+        </tr>`;
+    }).join('');
+
+    // Total row
+    const tTotal = totalNfse + totalNfe;
+    const tNfsePct = tTotal > 0 ? totalNfse / tTotal : 0;
+    const tNfePct = tTotal > 0 ? totalNfe / tTotal : 0;
+    const tRatio = totalNfe > 0 ? (totalNfse / totalNfe).toFixed(2) : '-';
+    body.innerHTML += `<tr class="total-row">
+        <td>TOTAL</td>
+        <td>${fmtFull(totalRec)}</td>
+        <td class="v-orange">${fmtFull(totalNfse)}</td>
+        <td class="v-red">${pct(tNfsePct)}</td>
+        <td class="v-blue">${fmtFull(totalNfe)}</td>
+        <td class="v-red">${pct(tNfePct)}</td>
+        <td>${tRatio}x</td>
+        <td><span class="status-bad">Meta: 1.0x</span></td>
+    </tr>`;
+}
+
+// ===== IMPACT ANALYSIS =====
+function renderImpact() {
+    const body = document.getElementById('impact-body');
+    const years = ['2024','2025','2026'];
+    let grandNfse=0, grandIdeal=0, grandExcess=0, grandIss=0;
+
+    body.innerHTML = years.map(y => {
+        const yData = dashData.filter(d => d.y === y && (d.nfse > 0 || d.nfe > 0));
+        const nfse = yData.reduce((s,d) => s+d.nfse, 0);
+        const nfe = yData.reduce((s,d) => s+d.nfe, 0);
+        const total = nfse + nfe;
+        const ideal = total * 0.5;
+        const excess = Math.max(0, nfse - ideal);
+        const iss = excess * 0.02;
+        grandNfse += nfse; grandIdeal += ideal; grandExcess += excess; grandIss += iss;
+
+        return `<tr>
+            <td>${y}</td>
+            <td class="v-orange">${fmtFull(nfse)}</td>
+            <td class="v-blue">${fmtFull(ideal)}</td>
+            <td class="v-red">${fmtFull(excess)}</td>
+            <td class="v-amber">${fmtFull(iss)}</td>
+        </tr>`;
+    }).join('');
+
+    body.innerHTML += `<tr class="total-row">
+        <td>ACUMULADO</td>
+        <td class="v-orange">${fmtFull(grandNfse)}</td>
+        <td class="v-blue">${fmtFull(grandIdeal)}</td>
+        <td class="v-red">${fmtFull(grandExcess)}</td>
+        <td class="v-amber">${fmtFull(grandIss)}</td>
+    </tr>`;
+}
+
+// ===== DRE SIMPLIFICADO =====
+function renderDRE(data) {
+    const table = document.getElementById('dre-table');
+    const headerRow = table.querySelector('thead tr');
+    const body = document.getElementById('dre-body');
+
+    // Build headers
+    headerRow.innerHTML = '<th>Linha</th>';
+    const yearTotals = {};
+    data.forEach(d => {
+        headerRow.innerHTML += `<th>${d.m}</th>`;
+        if(!yearTotals[d.y]) yearTotals[d.y] = {rec:0,est:0,desp:0,bma:0,liq:0,res:0};
+    });
+
+    // Also add year total columns
+    const activeYears = [...new Set(data.map(d=>d.y))].sort();
+    if(activeYears.length > 1 || data.length > 1) {
+        headerRow.innerHTML += '<th style="border-left:2px solid #f97316">TOTAL</th>';
+    }
+
+    // Compute rows
+    const rows = [
+        {label:'(+) Receita Bruta (Vindi)', key:'rec', cls:'v-green', bold:false},
+        {label:'(-) Estornos', key:'est', cls:'v-red', bold:false, neg:true},
+        {label:'(=) Receita Líquida', key:'liq', cls:'v-green', bold:true},
+        {label:'(-) Despesas Operacionais (Omie)', key:'desp', cls:'v-red', bold:false, neg:true},
+        {label:'(-) BMA (Folha/Benefícios/Impostos)', key:'bma', cls:'v-red', bold:false, neg:true, badge:'pending NF'},
+        {label:'(=) Resultado Operacional', key:'res', cls:'auto', bold:true},
+    ];
+
+    let totals = {rec:0,est:0,liq:0,desp:0,bma:0,res:0};
+
+    body.innerHTML = rows.map(row => {
+        let html = `<tr${row.bold?' style="background:rgba(249,115,22,0.05)"':''}><td>${row.label}${row.badge?'<span class="badge-pend">&x26A0; '+row.badge+'</span>':''}</td>`;
+        let rowTotal = 0;
+
+        data.forEach(d => {
+            let val;
+            if(row.key === 'liq') {
+                val = d.rec - d.est;
+            } else if(row.key === 'bma') {
+                val = bmaMap[d.m] || 0;
+            } else if(row.key === 'res') {
+                const liq = d.rec - d.est;
+                const bma = bmaMap[d.m] || 0;
+                val = liq - d.desp - bma;
+            } else {
+                val = d[row.key] || 0;
+            }
+            rowTotal += val;
+
+            let cls = row.cls;
+            if(cls === 'auto') cls = val >= 0 ? 'v-green' : 'v-red';
+
+            const display = row.neg ? fmtFull(val) : fmtFull(val);
+            html += `<td class="${cls}">${val === 0 ? '<span class="v-dim">-</span>' : display}</td>`;
+        });
+
+        totals[row.key] = rowTotal;
+        if(activeYears.length > 1 || data.length > 1) {
+            let cls = row.cls;
+            if(cls === 'auto') cls = rowTotal >= 0 ? 'v-green' : 'v-red';
+            html += `<td style="border-left:2px solid #f97316" class="${cls}"><strong>${fmtFull(rowTotal)}</strong></td>`;
+        }
+        html += '</tr>';
+        return html;
+    }).join('');
+}
+
+// Initial render
+render();
+</script>
+</body>
+</html>
