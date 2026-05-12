@@ -147,12 +147,12 @@ tr.clickable{cursor:pointer}
 
 <!-- Summary Cards -->
 <div class="summary" id="summary-cards">
-<div class="card cyan"><div class="val" id="s-total">-</div><div class="lbl">Total Base</div></div>
+<div class="card cyan"><div class="val" id="s-total">-</div><div class="lbl">Total Alunos</div></div>
 <div class="card green"><div class="val" id="s-ativos">-</div><div class="lbl">Ativos</div></div>
 <div class="card red"><div class="val" id="s-cancelados">-</div><div class="lbl">Cancelados</div></div>
 <div class="card amber"><div class="val" id="s-expirados">-</div><div class="lbl">Expirados</div></div>
 <div class="card purple"><div class="val" id="s-inativos">-</div><div class="lbl">Inativos</div></div>
-<div class="card blue"><div class="val" id="s-planilha">-</div><div class="lbl">Planilha</div></div>
+<div class="card blue"><div class="val" id="s-renovacoes">-</div><div class="lbl">Renovacoes (2+ compras)</div></div>
 </div>
 
 <!-- Modalidade Breakdown -->
@@ -182,6 +182,8 @@ tr.clickable{cursor:pointer}
 <option value="Espanhol">Espanhol</option>
 <option value="Private">Private</option>
 <option value="In-Company">In-Company</option>
+<option value="In-Company (FAAP)">In-Company (FAAP)</option>
+<option value="Imersao">Imersao</option>
 </select>
 <select id="filter-tipo">
 <option value="">PF & PJ</option>
@@ -217,7 +219,7 @@ tr.clickable{cursor:pointer}
 <th data-col="data_inicio">Inicio</th>
 <th data-col="data_fim">Fim</th>
 <th data-col="total_gasto">Valor (R$)</th>
-<th data-col="renovacoes">Renov.</th>
+<th data-col="compras">Compras</th>
 <th data-col="fonte">Fonte</th>
 </tr>
 </thead>
@@ -286,14 +288,14 @@ function renderSummary() {
  var cancelados = all.filter(function(a){return a.status==="Cancelado"}).length;
  var expirados = all.filter(function(a){return a.status==="Expirado"}).length;
  var inativos = all.filter(function(a){return a.status==="Inativo"}).length;
- var planilha = all.filter(function(a){return a.fonte_planilha}).length;
+ var renovacoes = all.filter(function(a){return a.compras>1}).length;
 
  document.getElementById("s-total").textContent = all.length.toLocaleString("pt-BR");
  document.getElementById("s-ativos").textContent = ativos.toLocaleString("pt-BR");
  document.getElementById("s-cancelados").textContent = cancelados.toLocaleString("pt-BR");
  document.getElementById("s-expirados").textContent = expirados.toLocaleString("pt-BR");
  document.getElementById("s-inativos").textContent = inativos.toLocaleString("pt-BR");
- document.getElementById("s-planilha").textContent = planilha.toLocaleString("pt-BR");
+ document.getElementById("s-renovacoes").textContent = renovacoes.toLocaleString("pt-BR");
  document.getElementById("total-label").textContent = all.length.toLocaleString("pt-BR");
 }
 
@@ -305,7 +307,7 @@ function renderModalidade() {
   mods[m] = (mods[m]||0) + 1;
  });
  var html = "";
- var order = ["Community","Community Flow","Espanhol","Private","In-Company","Desconhecido"];
+ var order = ["Community","Community Flow","Espanhol","Private","In-Company","In-Company (FAAP)","Imersao","Desconhecido"];
  order.forEach(function(m){
   if(mods[m]){
    html += '<div class="mod-card"><div class="val">'+mods[m]+'</div><div class="lbl">'+m+'</div></div>';
@@ -407,7 +409,7 @@ function renderTable() {
    '<td>'+formatDate(a.data_inicio)+'</td>' +
    '<td>'+formatDate(a.data_fim)+'</td>' +
    '<td style="text-align:right">'+valor+'</td>' +
-   '<td style="text-align:center">'+(a.renovacoes||0)+'</td>' +
+   '<td style="text-align:center">'+(a.compras||0)+'</td>' +
    '<td>'+fonteHtml+'</td>' +
    '</tr>';
  }
