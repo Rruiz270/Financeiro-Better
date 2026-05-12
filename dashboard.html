@@ -241,10 +241,15 @@ function render(){
         var bmaVal=d.bma_desp||0;var bmaN=d.bma_desp_n||0;
         rows+='<td class="'+(bmaVal>0?"v-purple":"v-dim")+'" style="'+(bmaVal>0?'cursor:pointer;text-decoration:underline':'')+'" '+(bmaVal>0?'onclick="openBma(\''+d.m+'\')"':'')+' title="Clique para ver detalhes BMA">'+(bmaVal>0?fmtK(bmaVal)+' <span style="font-size:8px;color:#94a3b8">('+bmaN+')</span>':'-')+'</td>';
         rows+='<td class="'+rc+'">'+fmtK(d.res)+'</td>';
-        rows+='<td class="v-blue">'+fmtK(d.nfse)+'</td><td class="v-blue">'+fmtK(d.nfe)+'</td>';
+        var nfsePct=d.rec>0?Math.round(d.nfse/d.rec*100):0;
+        var nfePct=d.rec>0?Math.round(d.nfe/d.rec*100):0;
+        rows+='<td class="v-blue">'+fmtK(d.nfse)+(nfsePct?' <span style="font-size:9px;color:#94a3b8">('+nfsePct+'%)</span>':'')+'</td>';
+        rows+='<td class="v-blue">'+fmtK(d.nfe)+(nfePct?' <span style="font-size:9px;color:#94a3b8">('+nfePct+'%)</span>':'')+'</td>';
         rows+='<td class="'+(d.pend>0?"v-amber":"v-dim")+'">'+(d.pend>0?fmtK(d.pend)+' ('+d.pend_n+')':'-')+'</td></tr>';
     });
-    rows+='<tr class="total-row"><td>TOTAL</td><td class="v-green">'+fmtK(tR)+'</td><td class="v-dim">'+nR+'</td><td class="v-red">'+fmtK(tD)+'</td><td class="v-dim">'+nD+'</td><td class="v-pink">'+fmtK(tE)+'</td><td class="v-purple">'+(tB>0?fmtK(tB)+' ('+nB+')':'-')+'</td><td class="'+(tRes>=0?"v-green":"v-red")+'">'+fmtK(tRes)+'</td><td class="v-blue">'+fmtK(tNs)+'</td><td class="v-blue">'+fmtK(tNe)+'</td><td class="v-amber">'+fmtK(tP)+'</td></tr>';
+    var tNsePct=tR>0?Math.round(tNs/tR*100):0;
+    var tNfePct=tR>0?Math.round(tNe/tR*100):0;
+    rows+='<tr class="total-row"><td>TOTAL</td><td class="v-green">'+fmtK(tR)+'</td><td class="v-dim">'+nR+'</td><td class="v-red">'+fmtK(tD)+'</td><td class="v-dim">'+nD+'</td><td class="v-pink">'+fmtK(tE)+'</td><td class="v-purple">'+(tB>0?fmtK(tB)+' ('+nB+')':'-')+'</td><td class="'+(tRes>=0?"v-green":"v-red")+'">'+fmtK(tRes)+'</td><td class="v-blue">'+fmtK(tNs)+(tNsePct?' <span style="font-size:9px;color:#94a3b8">('+tNsePct+'%)</span>':'')+'</td><td class="v-blue">'+fmtK(tNe)+(tNfePct?' <span style="font-size:9px;color:#94a3b8">('+tNfePct+'%)</span>':'')+'</td><td class="v-amber">'+fmtK(tP)+'</td></tr>';
     document.getElementById("tbody").innerHTML=rows;
 }
 render();

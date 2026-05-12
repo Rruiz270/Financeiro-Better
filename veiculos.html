@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frota &amp; Ve&iacute;culos &mdash; Confidencial</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.header{background:#1e293b;padding:20px 40px;border-bottom:2px solid #dc2626;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:22px;color:#f8fafc}.header h1 span{color:#dc2626}
+.header p{font-size:11px;color:#64748b;margin-top:2px}
+.container{max-width:1400px;margin:0 auto;padding:20px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+@media(max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:#1e293b;border-radius:12px;padding:18px;border:1px solid #334155}
+.tile h3{font-size:9px;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px}
+.tile .value{font-size:26px;font-weight:700;color:#dc2626}.tile .sub{font-size:10px;color:#64748b;margin-top:4px}
+.nav{display:flex;gap:6px}
+.nav-btn{padding:8px 16px;border-radius:8px;border:1.5px solid #334155;background:transparent;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer}
+.nav-btn:hover,.nav-btn.active{background:#dc2626;color:white;border-color:#dc2626}
+.section{background:#1e293b;border-radius:12px;padding:20px;margin:14px 0;border:1px solid #334155}
+.section h2{font-size:15px;color:#f8fafc;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{background:#0f172a}
+th{padding:10px 8px;text-align:right;color:#64748b;border-bottom:1px solid #334155;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:9px 8px;border-bottom:1px solid rgba(51,65,85,0.5);text-align:right;white-space:nowrap}
+td:first-child{text-align:left;font-weight:600;color:#f8fafc}
+tr:hover{background:#0f172a}
+tr.total-row{background:#0f172a;border-top:2px solid #dc2626}
+tr.total-row td{font-weight:700;padding:12px 8px}
+.v-red{color:#dc2626}.v-dim{color:#475569}.v-green{color:#4ade80}
+.back-link{color:#94a3b8;text-decoration:none;font-size:12px;display:inline-flex;align-items:center;gap:4px}
+.back-link:hover{color:#dc2626}
+.badge-pago{background:#052e16;color:#4ade80;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600}
+.badge-outros{background:#451a03;color:#fbbf24;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600}
+/* Password gate */
+#gate{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px}
+#gate h2{font-size:20px;color:#f8fafc}
+#gate p{font-size:12px;color:#64748b;max-width:300px;text-align:center}
+#gate input{padding:12px 20px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#f8fafc;font-size:14px;width:280px;text-align:center}
+#gate input:focus{outline:none;border-color:#dc2626}
+#gate button{padding:10px 30px;border-radius:8px;border:none;background:#dc2626;color:white;font-weight:600;cursor:pointer;font-size:14px}
+#gate button:hover{background:#b91c1c}
+#gate .error{color:#dc2626;font-size:12px;display:none}
+#app{display:none}
+.footer{text-align:center;padding:30px;color:#475569;font-size:10px}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="gate">
+<div style="font-size:48px;margin-bottom:8px">&#128274;</div>
+<h2>Acesso Restrito</h2>
+<p>Esta p&aacute;gina cont&eacute;m dados confidenciais de frota e ve&iacute;culos da Better Education.</p>
+<input type="password" id="pwd" placeholder="Senha de acesso" onkeydown="if(event.key==='Enter')checkPwd()">
+<button onclick="checkPwd()">Acessar</button>
+<div class="error" id="err">Senha incorreta. Tente novamente.</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+<div class="header">
+<div>
+<h1>Frota &amp; Ve&iacute;culos &mdash; <span>Confidencial</span></h1>
+<p>Despesas com ve&iacute;culos, IPVA, seguro, ped&aacute;gio, manuten&ccedil;&atilde;o e aquisi&ccedil;&otilde;es</p>
+</div>
+<div style="display:flex;align-items:center;gap:16px">
+<a href="index.html" class="back-link">&larr; Voltar</a>
+<div class="nav">
+<button class="nav-btn active" onclick="setYear('',this)">Todos</button>
+<button class="nav-btn" onclick="setYear('2024',this)">2024</button>
+<button class="nav-btn" onclick="setYear('2025',this)">2025</button>
+<button class="nav-btn" onclick="setYear('2026',this)">2026</button>
+</div>
+</div>
+</div>
+
+<div class="container">
+<div class="tiles" id="tiles"></div>
+
+<div class="section">
+<h2>Resumo Mensal</h2>
+<table>
+<thead><tr>
+<th style="text-align:left">M&ecirc;s</th>
+<th>Total</th>
+<th>Qtd</th>
+<th style="text-align:left">Detalhes por Fornecedor</th>
+</tr></thead>
+<tbody id="monthly-tbody"></tbody>
+</table>
+</div>
+
+<div class="section">
+<h2>Todos os Lan&ccedil;amentos</h2>
+<table>
+<thead><tr>
+<th style="text-align:left">Data</th>
+<th style="text-align:left">Fornecedor</th>
+<th style="text-align:left">Categoria</th>
+<th>Valor</th>
+<th style="text-align:left">Status</th>
+</tr></thead>
+<tbody id="detail-tbody"></tbody>
+</table>
+</div>
+</div>
+
+<div class="footer">
+Better Education &copy; 2026 | Dados confidenciais &mdash; Uso interno restrito<br>
+Fonte: Omie Contas a Pagar (despesas veiculares segregadas)
+</div>
+</div>
+
+<script src="veiculos_data.js"></script>
+<script>
+function checkPwd(){
+    var p=document.getElementById('pwd').value;
+    if(p==='Better@Frota2026'){
+        document.getElementById('gate').style.display='none';
+        document.getElementById('app').style.display='block';
+        render();
+    } else {
+        document.getElementById('err').style.display='block';
+        document.getElementById('pwd').value='';
+        document.getElementById('pwd').focus();
+    }
+}
+
+function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtK(v){if(Math.abs(v)>=1e6)return "R$ "+(v/1e6).toFixed(2)+"M";if(Math.abs(v)>=1e3)return "R$ "+(v/1e3).toFixed(1)+"k";return fmt(v)}
+
+var currentYear="";
+function setYear(y,btn){
+    currentYear=y;
+    document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});
+    btn.classList.add("active");
+    render();
+}
+
+// Month order for sorting
+var mesOrder={"Jan":1,"Fev":2,"Mar":3,"Abr":4,"Mai":5,"Jun":6,"Jul":7,"Ago":8,"Set":9,"Out":10,"Nov":11,"Dez":12};
+function mesSort(a,b){
+    var pa=a.split("/"), pb=b.split("/");
+    if(pa[1]!==pb[1]) return parseInt(pa[1])-parseInt(pb[1]);
+    return (mesOrder[pa[0]]||0)-(mesOrder[pb[0]]||0);
+}
+
+function render(){
+    var filtered=currentYear?veiculosData.filter(function(d){return d.ano===currentYear}):veiculosData;
+
+    // Summary cards
+    var total=0, t2024=0, t2025=0, t2026=0;
+    veiculosData.forEach(function(d){
+        total+=d.valor_pago;
+        if(d.ano==="2024") t2024+=d.valor_pago;
+        if(d.ano==="2025") t2025+=d.valor_pago;
+        if(d.ano==="2026") t2026+=d.valor_pago;
+    });
+
+    document.getElementById("tiles").innerHTML=
+        '<div class="tile"><h3>Total Gasto (Frota)</h3><div class="value">'+fmtK(total)+'</div><div class="sub">'+veiculosData.length+' lan&ccedil;amentos</div></div>'+
+        '<div class="tile"><h3>Total 2024</h3><div class="value">'+fmtK(t2024)+'</div><div class="sub">'+veiculosData.filter(function(d){return d.ano==="2024"}).length+' lan&ccedil;amentos</div></div>'+
+        '<div class="tile"><h3>Total 2025</h3><div class="value">'+fmtK(t2025)+'</div><div class="sub">'+veiculosData.filter(function(d){return d.ano==="2025"}).length+' lan&ccedil;amentos</div></div>'+
+        '<div class="tile"><h3>Total 2026</h3><div class="value">'+fmtK(t2026)+'</div><div class="sub">'+veiculosData.filter(function(d){return d.ano==="2026"}).length+' lan&ccedil;amentos</div></div>';
+
+    // Monthly summary
+    var byMonth={};
+    filtered.forEach(function(d){
+        if(!byMonth[d.mes]) byMonth[d.mes]={total:0,count:0,fornecedores:{}};
+        byMonth[d.mes].total+=d.valor_pago;
+        byMonth[d.mes].count++;
+        if(!byMonth[d.mes].fornecedores[d.fornecedor]) byMonth[d.mes].fornecedores[d.fornecedor]=0;
+        byMonth[d.mes].fornecedores[d.fornecedor]+=d.valor_pago;
+    });
+
+    var months=Object.keys(byMonth).sort(mesSort);
+    var mRows="", grandTotal=0, grandCount=0;
+    months.forEach(function(m){
+        var info=byMonth[m];
+        grandTotal+=info.total;
+        grandCount+=info.count;
+        var details=Object.entries(info.fornecedores).sort(function(a,b){return b[1]-a[1]}).map(function(e){
+            return '<span style="color:#94a3b8">'+e[0].substring(0,30)+'</span>: <span style="color:#dc2626;font-weight:600">'+fmtK(e[1])+'</span>';
+        }).join(' &middot; ');
+        mRows+='<tr><td>'+m+'</td><td class="v-red">'+fmtK(info.total)+'</td><td class="v-dim">'+info.count+'</td><td style="text-align:left;font-size:10px;white-space:normal;max-width:500px">'+details+'</td></tr>';
+    });
+    mRows+='<tr class="total-row"><td>TOTAL</td><td class="v-red">'+fmtK(grandTotal)+'</td><td class="v-dim">'+grandCount+'</td><td></td></tr>';
+    document.getElementById("monthly-tbody").innerHTML=mRows;
+
+    // Detail table
+    var sorted=filtered.slice().sort(function(a,b){
+        var da=a.data.split("/").reverse().join("");
+        var db=b.data.split("/").reverse().join("");
+        return db.localeCompare(da);
+    });
+    var dRows="";
+    sorted.forEach(function(d){
+        var badge=d.situacao==="PAGO"?'<span class="badge-pago">PAGO</span>':'<span class="badge-outros">'+d.situacao+'</span>';
+        dRows+='<tr><td>'+d.data+'</td><td style="text-align:left;color:#e2e8f0">'+d.fornecedor+'</td><td style="text-align:left;color:#94a3b8">'+d.categoria+'</td><td class="v-red">'+fmt(d.valor_pago)+'</td><td style="text-align:left">'+badge+'</td></tr>';
+    });
+    document.getElementById("detail-tbody").innerHTML=dRows;
+}
+</script>
+</body>
+</html>
