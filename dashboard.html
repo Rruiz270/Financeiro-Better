@@ -66,6 +66,7 @@ tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%
 <button class="nav-btn" onclick="setYear('2024',this)">2024</button>
 <button class="nav-btn" onclick="setYear('2025',this)">2025</button>
 <button class="nav-btn" onclick="setYear('2026',this)">2026</button>
+<button class="nav-btn" onclick="openChangelog()" style="border-color:#4ade80;color:#4ade80">&#128260; &Uacute;ltima Atualiza&ccedil;&atilde;o</button>
 </div>
 </div>
 <div class="container">
@@ -81,6 +82,10 @@ tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%
 <span style="color:#94a3b8;font-size:12px">A coluna <strong style="color:#c084fc">BMA</strong> agora puxa dados via API do Omie BMA (1.228 registros). Inclui folha CLT, FGTS, IRRF, benef&iacute;cios, impostos e repasses.<br>
 <strong>Receitas 2026:</strong> Fonte = planilha ERP (Pagar.me + Yapay + Cielo + B2B direto).<br>
 <strong>Receitas 2024-2025:</strong> Fonte = Vindi bills pagas (n&atilde;o inclui Pagar.me transfers desses anos).</span>
+</div>
+<div style="background:#1e293b;border:1px solid #334155;border-left:4px solid #dc2626;border-radius:8px;padding:14px 18px;margin:6px 0">
+<strong style="color:#f87171">&#9888; NFs BMA n&atilde;o lan&ccedil;adas no Omie Better</strong><br>
+<span style="color:#94a3b8;font-size:12px">A BMA emite notas mensais de ~R$ 200-350k para a Better (BPO folha/benef&iacute;cios/impostos), mas essas NFs <strong style="color:#fbbf24">n&atilde;o est&atilde;o registradas como Contas a Pagar no Omie Better</strong>. A coluna BMA mostra o gasto real via API BMA. Quando o financeiro lan&ccedil;ar as NFs no Omie Better, a coluna BMA passar&aacute; a ser apenas consulta.</span>
 </div>
 </div>
 <div class="section">
@@ -134,6 +139,8 @@ tr.has-flag td:first-child::before{content:"";position:absolute;left:4px;top:50%
 <script src="dashboard_diffs.js"></script>
 <script src="dashboard_divergences.js"></script>
 <script src="bma_data.js"></script>
+<script>var changelog = typeof changelog === "undefined" ? {last_update:"",previous_update:"",changes:[],atypical:[],summary:"Sem dados"} : changelog;</script>
+<script src="changelog.js"></script>
 <script>
 function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtK(v){if(Math.abs(v)>=1e6)return "R$ "+(v/1e6).toFixed(2)+"M";if(Math.abs(v)>=1e3)return "R$ "+(v/1e3).toFixed(1)+"k";return fmt(v)}
@@ -194,6 +201,38 @@ function openBma(m){
     document.getElementById("modal-bg").classList.add("show");
 }
 function closeModal(){document.getElementById("modal-bg").classList.remove("show")}
+
+function openChangelog(){
+    var cl=typeof changelog!=="undefined"?changelog:{last_update:"",previous_update:"",changes:[],atypical:[],summary:"Sem dados"};
+    document.getElementById("modal-title").textContent="Changelog — Últimas Atualizações";
+    var h='<div style="display:flex;gap:12px;margin-bottom:14px">';
+    h+='<div style="background:#0f172a;padding:10px 14px;border-radius:8px;flex:1;text-align:center"><div style="font-size:10px;color:#64748b">ÚLTIMA ATUALIZAÇÃO</div><div style="font-size:14px;font-weight:700;color:#4ade80">'+(cl.last_update||"N/A")+'</div></div>';
+    h+='<div style="background:#0f172a;padding:10px 14px;border-radius:8px;flex:1;text-align:center"><div style="font-size:10px;color:#64748b">ATUALIZAÇÃO ANTERIOR</div><div style="font-size:14px;font-weight:700;color:#94a3b8">'+(cl.previous_update||"N/A")+'</div></div>';
+    h+='</div>';
+    h+='<div style="background:#0f172a;padding:10px 14px;border-radius:8px;margin-bottom:14px"><div style="font-size:11px;color:#94a3b8">'+(cl.summary||"Nenhuma alteração detectada")+'</div></div>';
+    if(cl.atypical&&cl.atypical.length>0){
+        h+='<div style="background:#422006;border:1px solid #fbbf24;border-radius:8px;padding:10px 14px;margin-bottom:14px">';
+        h+='<div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:6px">⚠ Alterações Atípicas</div>';
+        cl.atypical.forEach(function(a){h+='<div style="font-size:12px;color:#fde68a;padding:2px 0">'+a.label+'</div>';});
+        h+='</div>';
+    }
+    if(cl.changes&&cl.changes.length>0){
+        h+='<table style="width:100%;font-size:12px;border-collapse:collapse">';
+        h+='<thead><tr style="border-bottom:1px solid #334155"><th style="text-align:left;padding:8px;color:#64748b">Mês</th><th style="text-align:left;padding:8px;color:#64748b">Campo</th><th style="text-align:right;padding:8px;color:#64748b">Anterior</th><th style="text-align:right;padding:8px;color:#64748b">Novo</th><th style="text-align:right;padding:8px;color:#64748b">Diferença</th></tr></thead><tbody>';
+        cl.changes.forEach(function(c){
+            var isAtyp=cl.atypical&&cl.atypical.some(function(a){return a.month===c.month&&a.field===c.field});
+            var rowBg=isAtyp?'background:#422006;':'';
+            var dc=c.diff>0?'#f87171':'#4ade80';
+            if(c.field==='rec')dc=c.diff>0?'#4ade80':'#f87171';
+            h+='<tr style="border-bottom:1px solid #1e293b;'+rowBg+'"><td style="padding:6px 8px;color:#e2e8f0">'+c.month+'</td><td style="padding:6px 8px;color:#94a3b8">'+c.label+'</td><td style="padding:6px 8px;text-align:right;color:#94a3b8">'+fmtK(c.old)+'</td><td style="padding:6px 8px;text-align:right;color:#e2e8f0">'+fmtK(c["new"])+'</td><td style="padding:6px 8px;text-align:right;color:'+dc+';font-weight:700">'+(c.diff>0?'+':'')+fmtK(c.diff)+'</td></tr>';
+        });
+        h+='</tbody></table>';
+    }else{
+        h+='<p style="font-size:12px;color:#64748b;text-align:center;padding:20px 0">Nenhuma alteração entre as últimas 2 atualizações.</p>';
+    }
+    document.getElementById("modal-body").innerHTML=h;
+    document.getElementById("modal-bg").classList.add("show");
+}
 
 function render(){
     var filtered=currentYear?dashData.filter(function(d){return d.y===currentYear}):dashData;

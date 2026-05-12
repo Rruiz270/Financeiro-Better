@@ -226,6 +226,20 @@ def main():
             'res': round(rec['total'] - desp['total'] - est['total'], 2),
         })
 
+    # --- CHANGELOG: Read old data before overwriting ---
+    old_dash_data = None
+    dash_data_path = os.path.join(output_dir, 'dashboard_data.js')
+    try:
+        with open(dash_data_path, 'r') as f:
+            raw = f.read()
+        # Extract JSON between "var dashData = " and ";\n"
+        start = raw.index('[')
+        end = raw.index('];') + 1
+        old_dash_data = json.loads(raw[start:end])
+        print(f"  Changelog: read {len(old_dash_data)} months from previous dashboard_data.js")
+    except Exception as e:
+        print(f"  Changelog: no previous dashboard_data.js to compare ({e})")
+
     # Save dashboard data
     with open(os.path.join(output_dir, 'dashboard_data.js'), 'w') as f:
         f.write('var dashData = ' + json.dumps(dash_data, ensure_ascii=True) + ';\n')
@@ -254,6 +268,96 @@ def main():
         desp_list.append({'data':dt_prev,'data_emissao':c.get('data_emissao',''),'data_vencimento':c.get('data_vencimento',''),'data_previsao':c.get('data_previsao',''),'mes':m or '','ano':y,'fornecedor':nome,'categoria':c.get('codigo_categoria',''),'valor_pago':round(c.get('valor_documento',0),2),'situacao':c.get('status_titulo',''),'projeto':'','grupo':'Geral'})
     with open(os.path.join(output_dir, 'despesas_all_data.js'), 'w') as f:
         f.write('var data = ' + json.dumps(desp_list, ensure_ascii=True) + ';')
+
+    # --- CHANGELOG: Generate changelog comparing old vs new ---
+    changelog_path = os.path.join(output_dir, 'changelog.js')
+    changelog_prev_path = os.path.join(output_dir, 'changelog_prev.js')
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+    # Read previous changelog to get its last_update as our previous_update
+    prev_update_ts = ""
+    try:
+        with open(changelog_path, 'r') as f:
+            cl_raw = f.read()
+        cl_start = cl_raw.index('{')
+        cl_end = cl_raw.rindex('}') + 1
+        old_changelog = json.loads(cl_raw[cl_start:cl_end])
+        prev_update_ts = old_changelog.get('last_update', '')
+        # Rename existing changelog to changelog_prev.js
+        import shutil
+        shutil.copy2(changelog_path, changelog_prev_path)
+        print(f"  Changelog: previous update was {prev_update_ts}")
+    except Exception as e:
+        print(f"  Changelog: no previous changelog.js ({e})")
+
+    field_labels = {
+        'rec': 'Receitas', 'desp': 'Despesas', 'est': 'Estornos',
+        'nfse': 'NFS-e', 'nfe': 'NF-e', 'pend': 'Pendentes'
+    }
+    compare_fields = ['rec', 'desp', 'est', 'nfse', 'nfe', 'pend']
+    changes = []
+    atypical = []
+
+    if old_dash_data is not None:
+        old_by_month = {d['m']: d for d in old_dash_data}
+        new_by_month = {d['m']: d for d in dash_data}
+
+        all_cl_months = set(list(old_by_month.keys()) + list(new_by_month.keys()))
+        for m in sorted(all_cl_months, key=lambda x: (int(x.split('/')[1]) if '/' in x else 0, mo.get(x.split('/')[0], 0))):
+            old_row = old_by_month.get(m, {})
+            new_row = new_by_month.get(m, {})
+            for field in compare_fields:
+                old_val = round(old_row.get(field, 0), 2)
+                new_val = round(new_row.get(field, 0), 2)
+                diff = round(new_val - old_val, 2)
+                if diff != 0:
+                    change_entry = {
+                        'month': m, 'field': field,
+                        'old': old_val, 'new': new_val,
+                        'diff': diff, 'label': field_labels.get(field, field)
+                    }
+                    changes.append(change_entry)
+                    # Check atypical: abs diff > 10k or > 10%
+                    pct = 0
+                    if old_val != 0:
+                        pct = round(abs(diff) / abs(old_val) * 100, 1)
+                    is_atypical = abs(diff) > 10000 or pct > 10
+                    if is_atypical:
+                        sign = '+' if diff > 0 else ''
+                        pct_str = f"{sign}{pct}%" if old_val != 0 else "novo"
+                        atypical.append({
+                            'month': m, 'field': field,
+                            'diff': diff, 'pct': pct,
+                            'label': f"{field_labels.get(field, field)} {m} {pct_str}"
+                        })
+
+    # Build summary
+    if changes:
+        total_rec_diff = sum(c['diff'] for c in changes if c['field'] == 'rec')
+        total_desp_diff = sum(c['diff'] for c in changes if c['field'] == 'desp')
+        parts = []
+        if total_rec_diff != 0:
+            sign = '+' if total_rec_diff > 0 else ''
+            parts.append(f"Receitas {sign}R$ {abs(total_rec_diff)/1000:.1f}k")
+        if total_desp_diff != 0:
+            sign = '+' if total_desp_diff > 0 else ''
+            parts.append(f"Despesas {sign}R$ {abs(total_desp_diff)/1000:.1f}k")
+        if atypical:
+            parts.append(f"{len(atypical)} alteração(ões) atípica(s)")
+        summary = ' | '.join(parts) if parts else 'Sem alterações significativas'
+    else:
+        summary = 'Sem alterações (primeira execução ou dados idênticos)'
+
+    changelog_obj = {
+        'last_update': now_str,
+        'previous_update': prev_update_ts,
+        'changes': changes,
+        'atypical': atypical,
+        'summary': summary
+    }
+    with open(changelog_path, 'w') as f:
+        f.write('var changelog = ' + json.dumps(changelog_obj, ensure_ascii=False) + ';\n')
+    print(f"  Changelog: {len(changes)} changes, {len(atypical)} atypical")
 
     print(f"\n=== Done! Dashboard: {len(dash_data)} months, Receitas: {len(rec_list)}, Despesas: {len(desp_list)} ===")
 
