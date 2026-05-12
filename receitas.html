@@ -23,7 +23,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .filter-group{display:flex;flex-direction:column;gap:2px}
 .filter-group label{font-size:9px;font-weight:700;text-transform:uppercase;color:#6b7280}
 .filter-group input,.filter-group select{padding:7px 9px;border:1.5px solid #e5e7eb;border-radius:7px;font-size:12px;outline:none;background:#fafafa}
-.filter-actions{display:flex;gap:8px;align-items:center}
+.filter-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .btn{padding:6px 12px;border:1.5px solid #e5e7eb;border-radius:7px;background:white;font-size:11px;cursor:pointer}
 .btn:hover{border-color:#059669;color:#059669}
 #count{font-size:10px;color:#6b7280;margin-left:auto}
@@ -51,6 +51,46 @@ tr.estorno{background:#fdf2f8}tr.estorno:hover{background:#fce7f3}
 tr.pendente{background:#fffbeb}tr.pendente:hover{background:#fef3c7}
 .vc{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:#059669}
 .vc.neg{color:#ec4899}
+.cliente-link{cursor:pointer;color:#1f2937;text-decoration:none;border-bottom:1px dashed #9ca3af}
+.cliente-link:hover{color:#059669;border-bottom-color:#059669}
+.badge-renewal{background:#059669;color:white;font-size:8px;padding:1px 5px;border-radius:8px;margin-left:4px;white-space:nowrap}
+.badge-loyal{background:#7c3aed;color:white;font-size:8px;padding:1px 5px;border-radius:8px;margin-left:4px;white-space:nowrap}
+.badge-sheet-renewal{background:#2563eb;color:white;font-size:8px;padding:1px 5px;border-radius:8px;margin-left:4px;white-space:nowrap}
+/* Modal styles */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;justify-content:center;align-items:center}
+.modal-overlay.active{display:flex}
+.modal{background:white;border-radius:16px;max-width:700px;width:95%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);padding:0}
+.modal-header{background:linear-gradient(135deg,#059669,#047857);color:white;padding:20px 24px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center}
+.modal-header h2{font-size:16px}
+.modal-close{background:none;border:none;color:white;font-size:24px;cursor:pointer;padding:0 4px;line-height:1}
+.modal-close:hover{opacity:0.8}
+.modal-body{padding:20px 24px}
+.modal-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.modal-info-item{background:#f9fafb;border-radius:8px;padding:10px 12px}
+.modal-info-item .lbl{font-size:9px;text-transform:uppercase;font-weight:600;color:#6b7280;margin-bottom:2px}
+.modal-info-item .val{font-size:14px;font-weight:600;color:#1f2937}
+.modal-info-item .val.green{color:#059669}
+.modal-info-item .val.purple{color:#7c3aed}
+.modal-info-item .val.red{color:#ec4899}
+.modal-bills-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:12px}
+.modal-bills-table th{background:#f3f4f6;padding:6px 8px;text-align:left;font-size:10px;font-weight:600;color:#6b7280}
+.modal-bills-table td{padding:6px 8px;border-bottom:1px solid #f3f4f6}
+.modal-bills-table tr:hover{background:#ecfdf5}
+.renewal-stat-card{background:#f9fafb;border-radius:10px;padding:14px;margin-bottom:10px;border-left:4px solid #059669}
+.renewal-stat-card h4{font-size:10px;text-transform:uppercase;color:#6b7280;margin-bottom:4px}
+.renewal-stat-card .big{font-size:22px;font-weight:700;color:#059669}
+.renewal-stat-card .sub{font-size:11px;color:#6b7280;margin-top:2px}
+.renewal-stat-card.purple{border-left-color:#7c3aed}
+.renewal-stat-card.purple .big{color:#7c3aed}
+.renewal-stat-card.blue{border-left-color:#2563eb}
+.renewal-stat-card.blue .big{color:#2563eb}
+.top-customers-list{max-height:350px;overflow-y:auto}
+.top-customer-row{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #f3f4f6;font-size:11px;cursor:pointer}
+.top-customer-row:hover{background:#ecfdf5}
+.top-customer-row .rank{font-weight:700;color:#6b7280;width:24px}
+.top-customer-row .name{flex:1;font-weight:500}
+.top-customer-row .amount{font-weight:700;color:#059669}
+.top-customer-row .count{color:#6b7280;font-size:10px;margin-left:8px}
 </style>
 </head>
 <body>
@@ -78,6 +118,7 @@ tr.pendente{background:#fffbeb}tr.pendente:hover{background:#fef3c7}
 <button class="btn" onclick="clearFilters()">Limpar</button>
 <button class="btn" style="border-color:#ec4899;color:#ec4899" onclick="document.getElementById('filterStatus').value='Estorno';render()">Estornos</button>
 <button class="btn" style="border-color:#f59e0b;color:#f59e0b" onclick="document.getElementById('filterStatus').value='Pendente';render()">Pendentes</button>
+<button class="btn" onclick="showRenewals()" style="border-color:#059669;color:#059669">&#x1F504; Renova&ccedil;&otilde;es</button>
 <span id="count"></span>
 </div>
 </div>
@@ -97,10 +138,38 @@ tr.pendente{background:#fffbeb}tr.pendente:hover{background:#fef3c7}
 <th onclick="sortTable(5)" id="th5">Status</th>
 </tr></thead><tbody id="tbody"></tbody></table></div></div>
 </div>
+
+<!-- Customer Detail Modal -->
+<div class="modal-overlay" id="customerModal" onclick="if(event.target===this)closeModal('customerModal')">
+<div class="modal">
+<div class="modal-header">
+<h2 id="modalCustomerName">Cliente</h2>
+<button class="modal-close" onclick="closeModal('customerModal')">&times;</button>
+</div>
+<div class="modal-body" id="modalCustomerBody"></div>
+</div>
+</div>
+
+<!-- Renewals Overview Modal -->
+<div class="modal-overlay" id="renewalModal" onclick="if(event.target===this)closeModal('renewalModal')">
+<div class="modal">
+<div class="modal-header" style="background:linear-gradient(135deg,#059669,#047857)">
+<h2>&#x1F504; An&aacute;lise de Renova&ccedil;&otilde;es</h2>
+<button class="modal-close" onclick="closeModal('renewalModal')">&times;</button>
+</div>
+<div class="modal-body" id="modalRenewalBody"></div>
+</div>
+</div>
+
 <script src="receitas_all_data.js"></script>
+<script src="receitas_customers.js"></script>
 <script>
 function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtK(v){return Math.abs(v)>=1e6?"R$ "+(v/1e6).toFixed(2)+"M":Math.abs(v)>=1e3?"R$ "+(v/1e3).toFixed(1)+"k":fmt(v)}
+
+// Build bill count per customer for badge logic
+var billCountByCustomer={};
+data.forEach(function(d){billCountByCustomer[d.cliente]=(billCountByCustomer[d.cliente]||0)+1});
 
 var allMeses={};data.forEach(function(d){allMeses[d.mes]=1});
 var mSel=document.getElementById("filterMes");
@@ -126,6 +195,29 @@ document.getElementById("cards-container").innerHTML=ch;
 var currentYear="";
 function setYear(y,btn){currentYear=y;document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});if(btn)btn.classList.add("active");document.getElementById("filterAno").value=y;render()}
 function clearFilters(){["search","filterMin","filterMax"].forEach(function(id){document.getElementById(id).value=""});["filterAno","filterMes","filterStatus"].forEach(function(id){document.getElementById(id).value=""});currentYear="";document.querySelectorAll(".nav-btn").forEach(function(b){b.classList.remove("active")});document.querySelector(".nav-btn").classList.add("active");render()}
+
+// Escape HTML for safe insertion
+function escHtml(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
+
+// Build renewal badge for a customer
+function renewalBadge(cliente){
+    var cnt=billCountByCustomer[cliente]||1;
+    var cd=customerData[cliente];
+    var badge="";
+    if(cnt>=6){
+        badge='<span class="badge-loyal">&#x2B50; Fiel ('+cnt+' compras)</span>';
+    } else if(cnt>=2){
+        badge='<span class="badge-renewal">&#x1F504; '+cnt+'&#170; compra</span>';
+    }
+    // If from spreadsheet marked as renewal
+    if(cd&&cd.renovacao&&cnt<2){
+        badge='<span class="badge-sheet-renewal">&#x1F504; Renova&ccedil;&atilde;o</span>';
+    }
+    return badge;
+}
+
+// Track bill order per customer during render
+var billOrderTracker={};
 
 function render(){
     var search=document.getElementById("search").value.toLowerCase();
@@ -154,13 +246,17 @@ function render(){
     var cb={};filtered.forEach(function(d){if(d.valor>0){cb[d.cliente]=(cb[d.cliente]||0)+d.valor}});
     var cbs=Object.entries(cb).sort(function(a,b){return b[1]-a[1]});
     document.getElementById("breakdown-grid").innerHTML=cbs.slice(0,30).map(function(e){
-        return '<div class="breakdown-item" onclick="document.getElementById(\'search\').value=\''+e[0].substring(0,20)+'\';render()"><span>'+e[0].substring(0,35)+'</span><span class="val">'+fmtK(e[1])+'</span></div>'}).join("");
+        return '<div class="breakdown-item" onclick="showCustomer(\''+escHtml(e[0].replace(/'/g,"\\'"))+'\')"><span>'+escHtml(e[0].substring(0,35))+renewalBadge(e[0])+'</span><span class="val">'+fmtK(e[1])+'</span></div>'}).join("");
 
+    // Track bill order per customer
+    billOrderTracker={};
     var rows=[],limit=Math.min(filtered.length,500);
     for(var i=0;i<limit;i++){var d=filtered[i];
         var rc=d.situacao==="Estorno"?"estorno":d.situacao==="Pendente"?"pendente":"";
         var vc=d.valor<0?"vc neg":"vc";
-        rows.push("<tr class='"+rc+"'><td style='white-space:nowrap'>"+d.data+"</td><td><strong>"+d.cliente+"</strong></td><td>"+d.categoria+"</td><td>"+d.mes+"</td><td class='"+vc+"'>"+fmt(d.valor)+"</td><td>"+d.situacao+"</td></tr>")}
+        var badge=renewalBadge(d.cliente);
+        var nameEsc=escHtml(d.cliente).replace(/'/g,"\\'");
+        rows.push("<tr class='"+rc+"'><td style='white-space:nowrap'>"+d.data+"</td><td><strong><a class='cliente-link' onclick=\"showCustomer('"+nameEsc+"')\">"+escHtml(d.cliente)+"</a></strong>"+badge+"</td><td>"+d.categoria+"</td><td>"+d.mes+"</td><td class='"+vc+"'>"+fmt(d.valor)+"</td><td>"+d.situacao+"</td></tr>")}
     if(filtered.length>500)rows.push("<tr><td colspan='6' style='text-align:center;color:#6b7280;padding:12px'>Mostrando 500 de "+filtered.length+"</td></tr>");
     document.getElementById("tbody").innerHTML=rows.join("")}
 
@@ -173,6 +269,125 @@ function sortTable(col){
     if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true}
     var keys=["data","cliente","categoria","mes","valor","situacao"];
     data.sort(function(a,b){var va=a[keys[col]],vb=b[keys[col]];if(typeof va==="number")return sortAsc?va-vb:vb-va;return sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va))});render()}
+
+// ─── Modal Functions ───────────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove("active")}
+
+function showCustomer(cliente){
+    var cd=customerData[cliente]||null;
+    var bills=customerBills[cliente]||[];
+    var cnt=billCountByCustomer[cliente]||0;
+
+    document.getElementById("modalCustomerName").textContent=cliente;
+
+    var html='<div class="modal-info-grid">';
+    // Name
+    html+='<div class="modal-info-item"><div class="lbl">Nome</div><div class="val">'+(cd?escHtml(cd.nome):escHtml(cliente))+'</div></div>';
+    // Email
+    html+='<div class="modal-info-item"><div class="lbl">Email</div><div class="val">'+(cd&&cd.email?escHtml(cd.email):cliente.indexOf("@")>-1?escHtml(cliente):"--")+'</div></div>';
+    // CPF
+    html+='<div class="modal-info-item"><div class="lbl">CPF/CNPJ</div><div class="val">'+(cd&&cd.cpf?escHtml(cd.cpf):"--")+'</div></div>';
+    // Total
+    html+='<div class="modal-info-item"><div class="lbl">Total Gasto</div><div class="val green">'+(cd?fmt(cd.total):fmt(0))+'</div></div>';
+    // Bills count
+    html+='<div class="modal-info-item"><div class="lbl">N&ordm; de Faturas</div><div class="val'+(cnt>=6?" purple":"")+'">'+cnt+'</div></div>';
+    // Product
+    html+='<div class="modal-info-item"><div class="lbl">Produto</div><div class="val">'+(cd&&cd.produto?escHtml(cd.produto):"--")+'</div></div>';
+    // First purchase
+    html+='<div class="modal-info-item"><div class="lbl">Primeira Compra</div><div class="val">'+(cd?cd.first:"--")+'</div></div>';
+    // Last purchase
+    html+='<div class="modal-info-item"><div class="lbl">&Uacute;ltima Compra</div><div class="val">'+(cd?cd.last:"--")+'</div></div>';
+    // Renewal status
+    var renewalLabel="--";
+    if(cd){
+        if(cd.renovacao) renewalLabel='<span style="color:#059669;font-weight:700">&#x2705; Renova&ccedil;&atilde;o</span>';
+        else renewalLabel='<span style="color:#6b7280">Novo Aluno</span>';
+    }
+    html+='<div class="modal-info-item"><div class="lbl">Status Renova&ccedil;&atilde;o</div><div class="val">'+renewalLabel+'</div></div>';
+    // Cancellation
+    var cancelLabel="--";
+    if(cd){
+        if(cd.cancelamento) cancelLabel='<span style="color:#ec4899;font-weight:700">&#x274C; Cancelado</span>';
+        else cancelLabel='<span style="color:#059669">Ativo</span>';
+    }
+    html+='<div class="modal-info-item"><div class="lbl">Cancelamento</div><div class="val">'+cancelLabel+'</div></div>';
+    html+='</div>';
+
+    // Bills list
+    if(bills.length>0){
+        html+='<h3 style="font-size:13px;color:#374151;margin:16px 0 8px">Hist&oacute;rico de Faturas ('+bills.length+')</h3>';
+        html+='<table class="modal-bills-table"><thead><tr><th>#</th><th>Data</th><th>M&ecirc;s</th><th>Valor</th><th>Status</th><th>Categoria</th></tr></thead><tbody>';
+        // Sort bills by date
+        var sortedBills=bills.slice().sort(function(a,b){return a.data.localeCompare(b.data)});
+        for(var i=0;i<sortedBills.length;i++){
+            var b=sortedBills[i];
+            var vcls=b.valor<0?"style='color:#ec4899;font-weight:600'":"style='color:#059669;font-weight:600'";
+            html+='<tr><td>'+(i+1)+'</td><td>'+b.data+'</td><td>'+b.mes+'</td><td '+vcls+'>'+fmt(b.valor)+'</td><td>'+b.situacao+'</td><td>'+b.categoria+'</td></tr>';
+        }
+        html+='</tbody></table>';
+    }
+
+    document.getElementById("modalCustomerBody").innerHTML=html;
+    document.getElementById("customerModal").classList.add("active");
+}
+
+function showRenewals(){
+    var stats=renewalStats;
+    var html='';
+
+    // Stats cards row
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+    html+='<div class="renewal-stat-card"><h4>Total de Clientes</h4><div class="big">'+stats.total_customers.toLocaleString("pt-BR")+'</div><div class="sub">clientes &uacute;nicos no Vindi</div></div>';
+    html+='<div class="renewal-stat-card purple"><h4>Clientes com 2+ Faturas</h4><div class="big">'+stats.multi_purchase.toLocaleString("pt-BR")+'</div><div class="sub">'+((stats.multi_purchase/stats.total_customers)*100).toFixed(1)+'% dos clientes</div></div>';
+    html+='<div class="renewal-stat-card blue"><h4>Renova&ccedil;&otilde;es (Planilha)</h4><div class="big">'+stats.renewals_from_spreadsheet+'</div><div class="sub">de 229 vendas na planilha</div></div>';
+    html+='<div class="renewal-stat-card"><h4>Valor Total Renova&ccedil;&otilde;es</h4><div class="big">'+fmtK(stats.total_renewal_value)+'</div><div class="sub">receita de renova&ccedil;&otilde;es</div></div>';
+    html+='</div>';
+
+    // Top 20 customers by total
+    var custArr=Object.entries(customerData).map(function(e){return{nome:e[0],total:e[1].total,bills:e[1].bills,renovacao:e[1].renovacao}});
+    custArr.sort(function(a,b){return b.total-a.total});
+
+    html+='<h3 style="font-size:13px;color:#374151;margin-bottom:10px">Top 20 Clientes por Valor Total</h3>';
+    html+='<div class="top-customers-list">';
+    for(var i=0;i<Math.min(20,custArr.length);i++){
+        var c=custArr[i];
+        var badge="";
+        if(c.bills>=6) badge='<span class="badge-loyal">&#x2B50; Fiel</span>';
+        else if(c.bills>=2) badge='<span class="badge-renewal">&#x1F504; '+c.bills+'x</span>';
+        if(c.renovacao) badge+='<span class="badge-sheet-renewal" style="margin-left:3px">Renov.</span>';
+        html+='<div class="top-customer-row" onclick="closeModal(\'renewalModal\');showCustomer(\''+escHtml(c.nome.replace(/'/g,"\\'"))+'\')">';
+        html+='<span class="rank">'+(i+1)+'.</span>';
+        html+='<span class="name">'+escHtml(c.nome)+badge+'</span>';
+        html+='<span class="amount">'+fmtK(c.total)+'</span>';
+        html+='<span class="count">'+c.bills+' fat.</span>';
+        html+='</div>';
+    }
+    html+='</div>';
+
+    // Distribution breakdown
+    var dist={1:0,2:0,3:0,4:0,5:0,"6+":0};
+    custArr.forEach(function(c){
+        if(c.bills>=6) dist["6+"]++;
+        else if(c.bills>=5) dist[5]++;
+        else if(c.bills>=4) dist[4]++;
+        else if(c.bills>=3) dist[3]++;
+        else if(c.bills>=2) dist[2]++;
+        else dist[1]++;
+    });
+    html+='<h3 style="font-size:13px;color:#374151;margin:16px 0 10px">Distribui&ccedil;&atilde;o por N&ordm; de Faturas</h3>';
+    html+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">';
+    [["1 fatura",dist[1],"#6b7280"],["2 faturas",dist[2],"#059669"],["3 faturas",dist[3],"#059669"],["4 faturas",dist[4],"#059669"],["5 faturas",dist[5],"#7c3aed"],["6+ faturas",dist["6+"],"#7c3aed"]].forEach(function(item){
+        html+='<div style="text-align:center;background:#f9fafb;border-radius:8px;padding:10px 4px"><div style="font-size:18px;font-weight:700;color:'+item[2]+'">'+item[1]+'</div><div style="font-size:9px;color:#6b7280;margin-top:2px">'+item[0]+'</div></div>';
+    });
+    html+='</div>';
+
+    document.getElementById("modalRenewalBody").innerHTML=html;
+    document.getElementById("renewalModal").classList.add("active");
+}
+
+// Close modals on Escape key
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeModal("customerModal");closeModal("renewalModal")}});
+
 render();
 </script>
 </body>
