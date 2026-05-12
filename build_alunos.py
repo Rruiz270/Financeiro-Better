@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 """
-Build comprehensive student database from:
-1. Sales spreadsheet (Vendas tab - 229 records)
-2. Vindi customer data (receitas_customers.js - 2852 entries)
+Build comprehensive student database from THREE data sources:
+1. Alunos tab (217 records) — has inicio/fim dates, nivel, meses, sale_key
+2. Vendas tab (229 records) — has CPF, endereco, produto, valor, renovacao, cancelamento
+3. Vindi receitas_all_data.js (7,642 paid bills, 2,852 unique clients)
+
+Links Alunos→Vendas via sale_key, then matches Vindi by email + fuzzy name.
 
 Outputs:
-- alunos_data.js (for HTML dashboard)
-- Alunos_Base_Completa.xlsx (multi-tab Excel)
+- alunos_data.js  (for HTML dashboard)
+- Alunos_Base_Completa.xlsx (6-tab Excel)
 """
 
 import json
 import re
 import os
+import unicodedata
 from datetime import datetime, date
 from collections import defaultdict
 
@@ -30,7 +34,6 @@ def normalize_cpf(raw):
     if raw is None:
         return ""
     s = re.sub(r"[.\-/ ]", "", str(raw).strip())
-    # Remove leading zeros padding issues
     return s if s.isdigit() else ""
 
 
@@ -40,11 +43,13 @@ def safe_date(val):
         return None
     if isinstance(val, datetime):
         return val.date()
-    if isinstance(val, date):
+    if isinstance(val, date) and not isinstance(val, datetime):
         return val
+    if isinstance(val, (int, float)):
+        return None
     if isinstance(val, str):
         val = val.strip()
-        if val in ("-", "", "nan", "None"):
+        if val in ("-", "", "nan", "None", "NaT"):
             return None
         for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%Y-%m-%dT%H:%M:%S"):
             try:
@@ -69,13 +74,22 @@ def safe_str(val):
     return str(val).strip()
 
 
+def safe_int(val):
+    if val is None:
+        return 0
+    try:
+        return int(float(val))
+    except (ValueError, TypeError):
+        return 0
+
+
 def title_name(name):
     """Title-case a name but respect common exceptions."""
     if not name:
         return ""
     parts = name.strip().split()
     result = []
-    lower_words = {"de", "da", "do", "das", "dos", "e", "em"}
+    lower_words = {"de", "da", "do", "das", "dos", "e", "em", "del", "di"}
     for i, p in enumerate(parts):
         if i > 0 and p.lower() in lower_words:
             result.append(p.lower())
@@ -84,489 +98,691 @@ def title_name(name):
     return " ".join(result)
 
 
+def strip_accents(s):
+    """Remove accents for fuzzy matching."""
+    if not s:
+        return ""
+    nfkd = unicodedata.normalize("NFKD", s)
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
+
+
+def normalize_name_for_match(name):
+    """Lowercase, strip accents, remove punctuation for fuzzy matching."""
+    if not name:
+        return ""
+    s = strip_accents(name).lower().strip()
+    s = re.sub(r"[^a-z0-9 ]", "", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
 def classify_modalidade(produto, tipo_doc):
-    """Classify the modality based on product name and document type."""
+    """Classify modality based on product name and document type."""
     if not produto:
         if tipo_doc == "CNPJ":
             return "In-Company"
         return "Community"
     p = produto.lower()
+    if "particular" in p or "private" in p:
+        return "Private"
     if "flow" in p:
         return "Community Flow"
     if "espanhol" in p or "spanish" in p:
         return "Espanhol"
-    if "particular" in p or "private" in p:
-        return "Private"
     if tipo_doc == "CNPJ":
         return "In-Company"
-    # Default for "Inglês 12 meses", "Inglês 06 meses", "Inglês 09 meses"
     return "Community"
 
 
-def determine_status(cancelou, data_cancel, data_fim, vindi_last):
-    """Determine student status.
-
-    Active if:
-    - Course end date is in the future, OR
-    - Last Vindi payment is within ~3 months of today (Mar 2026+), OR
-    - data_fim is None but Vindi payments are recent
-
-    Cancelled if cancelou flag is set.
-    Expirado if course ended and no recent Vindi payments.
+def determine_status(cancelou, data_fim, vindi_last, fonte_planilha):
     """
-    if cancelou:
+    Status logic:
+    - Cancelado: has cancelamento in planilha
+    - Ativo: data_fim >= today and not cancelled
+    - Ativo (Vindi): expirado in planilha but has Vindi payment after 2026-03-01
+    - Expirado: data_fim < today, no recent Vindi payment
+    - Inativo: Vindi-only with last payment before 2025-06-01
+    """
+    vl = safe_date(vindi_last) if isinstance(vindi_last, str) else vindi_last
+    vindi_recent = vl is not None and vl >= date(2026, 3, 1)
+    vindi_old = vl is not None and vl < date(2025, 6, 1)
+
+    if cancelou and fonte_planilha:
         return "Cancelado"
 
-    # Check Vindi activity: if last payment is recent, student is active
-    vl = safe_date(vindi_last) if vindi_last else None
-    vindi_active = vl and vl >= date(2026, 3, 1)  # Last 3 months
+    df = safe_date(data_fim) if isinstance(data_fim, str) else data_fim
 
-    if data_fim:
-        if data_fim >= TODAY:
+    if fonte_planilha:
+        if df and df >= TODAY and not cancelou:
             return "Ativo"
-        if vindi_active:
-            return "Ativo"
+        if vindi_recent:
+            return "Ativo (Vindi)"
         return "Expirado"
 
-    # No end date
-    if vindi_active:
-        return "Ativo"
+    # Vindi-only
+    if vindi_recent:
+        return "Ativo (Vindi)"
+    if vindi_old:
+        return "Inativo"
     return "Expirado"
 
 
 def estimate_remaining_classes(data_inicio, duracao_meses, status):
-    """Estimate remaining classes based on course duration and elapsed time.
-    Community classes = ~2 per week = ~8/month.
-    Private = ~4/month.
-    """
-    if status != "Ativo" or not data_inicio or not duracao_meses:
+    """Estimate remaining classes. Community ~8/month, Private ~4/month."""
+    if "Ativo" not in status or not data_inicio or not duracao_meses:
         return 0
     di = safe_date(data_inicio) if isinstance(data_inicio, str) else data_inicio
     if not di:
         return 0
     dur = int(duracao_meses) if duracao_meses else 12
-    total_classes = dur * 8  # ~2/week
+    total_classes = dur * 8
     elapsed_months = (TODAY.year - di.year) * 12 + (TODAY.month - di.month)
-    used = elapsed_months * 8
+    used = max(0, elapsed_months) * 8
     remaining = max(0, total_classes - used)
     return remaining
 
 
-# ─── Step 1: Read Sales Spreadsheet ──────────────────────────────────────────
+def compute_meses_restantes(data_fim, status):
+    """Months remaining from today to end date."""
+    if "Ativo" not in status:
+        return 0
+    df = safe_date(data_fim) if isinstance(data_fim, str) else data_fim
+    if not df or df < TODAY:
+        return 0
+    return max(0, (df.year - TODAY.year) * 12 + (df.month - TODAY.month))
 
-print("Reading sales spreadsheet...")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 1: Read Alunos tab (217 records)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+print("=" * 70)
+print("STEP 1: Reading Alunos tab...")
 wb = openpyxl.load_workbook(SALES_FILE, data_only=True)
-ws = wb["Vendas"]
+ws_alunos = wb["Alunos"]
 
-sales_by_cpf = defaultdict(list)
-sales_by_email = defaultdict(list)
-sales_records = []
+alunos_by_salekey = {}   # sale_key -> aluno record
+alunos_by_email = {}     # email -> aluno record
 
-for r in range(2, ws.max_row + 1):
-    nome = safe_str(ws.cell(r, 6).value)
+alunos_count = 0
+for r in range(2, ws_alunos.max_row + 1):
+    nome = safe_str(ws_alunos.cell(r, 2).value)
     if not nome:
         continue
 
-    cpf_raw = safe_str(ws.cell(r, 5).value)
-    cpf = normalize_cpf(cpf_raw)
-    email = safe_str(ws.cell(r, 7).value).lower()
-    celular = safe_str(ws.cell(r, 8).value)
-    endereco = safe_str(ws.cell(r, 9).value)
-    data_transacao = safe_date(ws.cell(r, 10).value)
-    data_venda = safe_date(ws.cell(r, 11).value)
-    ultima_parcela = safe_date(ws.cell(r, 12).value)
-    forma = safe_str(ws.cell(r, 13).value)
-    produto = safe_str(ws.cell(r, 14).value)
-    fonte = safe_str(ws.cell(r, 15).value)
-    renovacao = safe_str(ws.cell(r, 16).value)
-    nivel = safe_str(ws.cell(r, 17).value)
-    desconto = safe_float(ws.cell(r, 18).value)
-    duracao = safe_str(ws.cell(r, 19).value)
-    valor_total = safe_float(ws.cell(r, 22).value)
-    cancel_raw = ws.cell(r, 27).value
-    cancelamento = bool(cancel_raw) and str(cancel_raw).strip() not in ("-", "", "False", "0")
-    data_cancelamento = safe_date(ws.cell(r, 32).value)
+    aluno_id = safe_int(ws_alunos.cell(r, 1).value)
+    email = safe_str(ws_alunos.cell(r, 3).value).strip().lower()
+    tipo = safe_str(ws_alunos.cell(r, 4).value)  # B2C / B2B
+    sale_key = safe_int(ws_alunos.cell(r, 5).value)
+    celular = safe_str(ws_alunos.cell(r, 6).value)
+    meses = safe_int(ws_alunos.cell(r, 7).value)
+    inicio = safe_date(ws_alunos.cell(r, 8).value)
+    fim = safe_date(ws_alunos.cell(r, 9).value)
+    nivel = safe_str(ws_alunos.cell(r, 10).value)
 
-    # Determine doc type from CPF length
-    tipo_doc_val = safe_str(ws.cell(r, 4).value)
-    if len(cpf) == 14 or len(cpf) > 11:
+    rec = {
+        "aluno_id": aluno_id,
+        "nome": title_name(nome),
+        "email": email,
+        "tipo": tipo,
+        "sale_key": sale_key,
+        "celular": celular,
+        "meses": meses,
+        "inicio": inicio,
+        "fim": fim,
+        "nivel": nivel,
+    }
+
+    if sale_key:
+        alunos_by_salekey[sale_key] = rec
+    if email:
+        alunos_by_email[email] = rec
+
+    alunos_count += 1
+
+print(f"  Alunos loaded: {alunos_count}")
+print(f"  Unique sale_keys: {len(alunos_by_salekey)}")
+print(f"  Unique emails: {len(alunos_by_email)}")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 2: Read Vendas tab (229 records)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+print("\nSTEP 2: Reading Vendas tab...")
+ws_vendas = wb["Vendas"]
+
+vendas_by_salekey = {}  # sale_key -> venda record
+vendas_records = []
+
+for r in range(2, ws_vendas.max_row + 1):
+    sale_key_raw = ws_vendas.cell(r, 1).value
+    if sale_key_raw is None:
+        continue
+
+    sale_key = safe_int(sale_key_raw)
+    nf_produto = safe_str(ws_vendas.cell(r, 2).value)
+    nf_servico = safe_str(ws_vendas.cell(r, 3).value)
+    documento_tipo = safe_str(ws_vendas.cell(r, 4).value)  # CPF or CNPJ
+    cpf_cnpj = safe_str(ws_vendas.cell(r, 5).value)
+    cpf = normalize_cpf(cpf_cnpj)
+    nome = safe_str(ws_vendas.cell(r, 6).value)
+    email = safe_str(ws_vendas.cell(r, 7).value).strip().lower()
+    celular = safe_str(ws_vendas.cell(r, 8).value)
+    endereco = safe_str(ws_vendas.cell(r, 9).value)
+    data_transacao = safe_date(ws_vendas.cell(r, 10).value)
+    data_venda = safe_date(ws_vendas.cell(r, 11).value)
+    ultima_parcela = safe_date(ws_vendas.cell(r, 12).value)
+    forma = safe_str(ws_vendas.cell(r, 13).value)
+    produto = safe_str(ws_vendas.cell(r, 14).value)
+    fonte_vendedor = safe_str(ws_vendas.cell(r, 15).value)
+    renovacao = safe_str(ws_vendas.cell(r, 16).value)
+    nivel = safe_str(ws_vendas.cell(r, 17).value)
+    desconto = safe_float(ws_vendas.cell(r, 18).value)
+    duracao_curso = safe_str(ws_vendas.cell(r, 19).value)
+    valor_total = safe_float(ws_vendas.cell(r, 22).value)
+    cancel_raw = ws_vendas.cell(r, 27).value
+    cancelamento = bool(cancel_raw) and str(cancel_raw).strip() not in ("-", "", "False", "0", "Não", "None")
+    data_cancelamento = safe_date(ws_vendas.cell(r, 32).value)
+
+    # Determine doc type
+    if "cnpj" in documento_tipo.lower() or (cpf and len(cpf) > 11):
         tipo_doc = "CNPJ"
-    elif len(cpf) == 11:
+    elif "cpf" in documento_tipo.lower() or (cpf and len(cpf) == 11):
         tipo_doc = "CPF"
-    elif "cnpj" in tipo_doc_val.lower():
-        tipo_doc = "CNPJ"
     else:
         tipo_doc = "CPF"
 
-    # Calculate end date: data_venda + duracao_curso months
-    # Note: ultima_parcela (col 12) is the last PAYMENT date, not course end
-    # The actual course end date = data_venda + duracao_curso
-    data_fim = None
-    if data_venda and duracao:
-        try:
-            dur_int = int(duracao)
-            year = data_venda.year + (data_venda.month + dur_int - 1) // 12
-            month = (data_venda.month + dur_int - 1) % 12 + 1
-            day = min(data_venda.day, 28)  # safe day
-            data_fim = date(year, month, day)
-        except Exception:
-            data_fim = ultima_parcela  # fallback
-    if not data_fim:
-        data_fim = ultima_parcela  # fallback to last installment
-
     rec = {
+        "sale_key": sale_key,
         "cpf": cpf,
+        "tipo_doc": tipo_doc,
         "nome": title_name(nome),
         "email": email,
         "celular": celular,
         "endereco": endereco,
-        "tipo_doc": tipo_doc,
         "data_transacao": data_transacao,
         "data_venda": data_venda,
-        "data_fim": data_fim,
+        "ultima_parcela": ultima_parcela,
         "forma": forma,
         "produto": produto,
-        "fonte": fonte,
+        "vendedor": fonte_vendedor,
         "renovacao": renovacao,
         "nivel": nivel,
         "desconto": desconto,
-        "duracao": duracao,
+        "duracao_curso": duracao_curso,
         "valor_total": valor_total,
         "cancelamento": cancelamento,
         "data_cancelamento": data_cancelamento,
     }
-    sales_records.append(rec)
 
-    # Index by CPF and email
-    if cpf:
-        sales_by_cpf[cpf].append(rec)
-    if email:
-        sales_by_email[email].append(rec)
+    vendas_by_salekey[sale_key] = rec
+    vendas_records.append(rec)
 
-print(f"  Sales records loaded: {len(sales_records)}")
+print(f"  Vendas loaded: {len(vendas_records)}")
+print(f"  Unique sale_keys in Vendas: {len(vendas_by_salekey)}")
 
-# ─── Step 2: Read Vindi Customer Data ────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 3: Link Alunos to Vendas via sale_key
+# ═══════════════════════════════════════════════════════════════════════════════
 
-print("Reading Vindi customer data...")
-with open(os.path.join(PROJECT, "receitas_customers.js"), "r") as f:
-    content = f.read()
+print("\nSTEP 3: Linking Alunos → Vendas via sale_key...")
 
-# Parse customerData
-cd_start = content.index("var customerData = ") + len("var customerData = ")
-cd_end = content.index(";\nvar customerBills")
-customer_data = json.loads(content[cd_start:cd_end])
+# Build unified planilha students keyed by email (primary key for dedup)
+planilha_students = {}  # email -> student dict
 
-# Parse customerBills
-cb_start = content.index("var customerBills = ") + len("var customerBills = ")
-cb_end = content.index(";\nvar renewalStats")
-customer_bills = json.loads(content[cb_start:cb_end])
+linked = 0
+unlinked = 0
 
-print(f"  Vindi customers loaded: {len(customer_data)}")
+for sale_key, aluno in alunos_by_salekey.items():
+    venda = vendas_by_salekey.get(sale_key)
+    email = aluno["email"]
 
-# Build Vindi lookup by CPF and email
-vindi_by_cpf = {}
-vindi_by_email = {}
-vindi_by_name_lower = {}
+    if not email:
+        # Use nome-based key as fallback
+        email = aluno["nome"].lower().replace(" ", "_") + "@noemail"
 
-for name, cust in customer_data.items():
-    cpf = normalize_cpf(cust.get("cpf", ""))
-    email = (cust.get("email", "") or "").lower().strip()
-    bills = customer_bills.get(name, [])
-
-    vindi_rec = {
-        "nome_vindi": name,
-        "bills": cust.get("bills", 0),
-        "total": cust.get("total", 0.0),
-        "first": cust.get("first", ""),
-        "last": cust.get("last", ""),
-        "produto": cust.get("produto", ""),
-        "renovacao": cust.get("renovacao", False),
-        "cancelamento": cust.get("cancelamento", False),
-        "bill_detail": bills,
-    }
-
-    if cpf:
-        vindi_by_cpf[cpf] = vindi_rec
-    if email:
-        vindi_by_email[email] = vindi_rec
-    vindi_by_name_lower[name.lower().strip()] = vindi_rec
-
-# ─── Step 3: Consolidate into unified student records ─────────────────────────
-
-print("Consolidating student database...")
-students = {}  # keyed by CPF or email
-
-# First pass: sales spreadsheet (primary source, 229 records)
-for rec in sales_records:
-    key = rec["cpf"] if rec["cpf"] else rec["email"]
-    if not key:
-        key = rec["nome"].lower().replace(" ", "_")
-
-    if key in students:
-        student = students[key]
-        # Add this sale
-        student["vendas"].append({
-            "data_venda": str(rec["data_venda"]) if rec["data_venda"] else "",
-            "produto": rec["produto"],
-            "nivel": rec["nivel"],
-            "valor": rec["valor_total"],
-            "renovacao": rec["renovacao"],
-            "vendedor": rec["fonte"],
-            "cancelamento": rec["cancelamento"],
-            "data_cancel": str(rec["data_cancelamento"]) if rec["data_cancelamento"] else "",
-            "forma": rec["forma"],
-            "desconto": rec["desconto"],
-            "duracao": rec["duracao"],
-        })
-        # Update aggregates
-        student["total_gasto"] += rec["valor_total"]
-        if rec["renovacao"] == "Renovação":
-            student["renovacoes"] += 1
-        if rec["cancelamento"]:
-            student["cancelou"] = True
-            if rec["data_cancelamento"]:
-                student["data_cancelamento"] = str(rec["data_cancelamento"])
-        # Update date range
-        if rec["data_venda"]:
-            if not student["data_inicio"] or rec["data_venda"] < safe_date(student["data_inicio"]):
-                student["data_inicio"] = str(rec["data_venda"])
-        if rec["data_fim"]:
-            if not student["data_fim"] or rec["data_fim"] > safe_date(student["data_fim"]):
-                student["data_fim"] = str(rec["data_fim"])
-        # Prefer non-empty fields
-        if not student["email"] and rec["email"]:
-            student["email"] = rec["email"]
-        if not student["celular"] and rec["celular"]:
-            student["celular"] = rec["celular"]
-        if not student["endereco"] and rec["endereco"]:
-            student["endereco"] = rec["endereco"]
-        # Keep latest nivel
-        if rec["nivel"]:
-            student["nivel"] = rec["nivel"]
-        if rec["produto"]:
-            student["produto_principal"] = rec["produto"]
+    if venda:
+        linked += 1
+        cpf = venda["cpf"]
+        tipo_doc = venda["tipo_doc"]
+        endereco = venda["endereco"]
+        produto = venda["produto"]
+        vendedor = venda["vendedor"]
+        renovacao_str = venda["renovacao"]
+        valor_total = venda["valor_total"]
+        forma = venda["forma"]
+        cancelamento = venda["cancelamento"]
+        data_cancelamento = venda["data_cancelamento"]
+        data_venda = venda["data_venda"]
+        duracao_curso = venda["duracao_curso"]
+        celular = venda["celular"] or aluno["celular"]
+        nivel = venda["nivel"] or aluno["nivel"]
     else:
-        students[key] = {
-            "cpf": rec["cpf"],
-            "nome": rec["nome"],
-            "email": rec["email"],
-            "celular": rec["celular"],
-            "endereco": rec["endereco"],
-            "tipo_doc": rec["tipo_doc"],
-            "vendas": [{
-                "data_venda": str(rec["data_venda"]) if rec["data_venda"] else "",
-                "produto": rec["produto"],
-                "nivel": rec["nivel"],
-                "valor": rec["valor_total"],
-                "renovacao": rec["renovacao"],
-                "vendedor": rec["fonte"],
-                "cancelamento": rec["cancelamento"],
-                "data_cancel": str(rec["data_cancelamento"]) if rec["data_cancelamento"] else "",
-                "forma": rec["forma"],
-                "desconto": rec["desconto"],
-                "duracao": rec["duracao"],
-            }],
-            "data_inicio": str(rec["data_venda"]) if rec["data_venda"] else "",
-            "data_fim": str(rec["data_fim"]) if rec["data_fim"] else "",
-            "cancelou": rec["cancelamento"],
-            "data_cancelamento": str(rec["data_cancelamento"]) if rec["data_cancelamento"] else "",
-            "renovacoes": 1 if rec["renovacao"] == "Renovação" else 0,
-            "total_gasto": rec["valor_total"],
-            "produto_principal": rec["produto"],
-            "nivel": rec["nivel"],
-            "duracao": rec["duracao"],
+        unlinked += 1
+        cpf = ""
+        tipo_doc = "CPF"
+        endereco = ""
+        produto = ""
+        vendedor = ""
+        renovacao_str = ""
+        valor_total = 0.0
+        forma = ""
+        cancelamento = False
+        data_cancelamento = None
+        data_venda = aluno["inicio"]
+        duracao_curso = str(aluno["meses"]) if aluno["meses"] else ""
+        celular = aluno["celular"]
+        nivel = aluno["nivel"]
+
+    # Build venda detail for the modal
+    venda_detail = None
+    if venda:
+        venda_detail = {
+            "data_venda": str(data_venda) if data_venda else "",
+            "produto": produto,
+            "nivel": nivel,
+            "valor": valor_total,
+            "renovacao": renovacao_str,
+            "vendedor": vendedor,
+            "cancelamento": cancelamento,
+            "data_cancel": str(data_cancelamento) if data_cancelamento else "",
+            "forma": forma,
+            "desconto": venda["desconto"],
+            "duracao": duracao_curso,
+        }
+
+    if email in planilha_students:
+        # Merge: add another sale
+        student = planilha_students[email]
+        if venda_detail:
+            student["vendas"].append(venda_detail)
+        student["total_gasto"] += valor_total
+        if renovacao_str in ("Renovação", "Sim"):
+            student["renovacoes"] += 1
+        if cancelamento:
+            student["cancelou"] = True
+            if data_cancelamento:
+                student["data_cancelamento"] = str(data_cancelamento)
+        # Update date range from Alunos tab (authoritative)
+        if aluno["inicio"]:
+            existing_inicio = safe_date(student["data_inicio"])
+            if not existing_inicio or aluno["inicio"] < existing_inicio:
+                student["data_inicio"] = str(aluno["inicio"])
+        if aluno["fim"]:
+            existing_fim = safe_date(student["data_fim"])
+            if not existing_fim or aluno["fim"] > existing_fim:
+                student["data_fim"] = str(aluno["fim"])
+        # Prefer non-empty
+        if not student["cpf"] and cpf:
+            student["cpf"] = cpf
+        if not student["celular"] and celular:
+            student["celular"] = celular
+        if not student["endereco"] and endereco:
+            student["endereco"] = endereco
+        if nivel:
+            student["nivel"] = nivel
+        if produto:
+            student["produto_principal"] = produto
+        if not student["tipo_doc"] or student["tipo_doc"] == "CPF":
+            if tipo_doc == "CNPJ":
+                student["tipo_doc"] = tipo_doc
+        if vendedor:
+            student["vendedor"] = vendedor
+    else:
+        planilha_students[email] = {
+            "cpf": cpf,
+            "nome": aluno["nome"],
+            "email": email if "@noemail" not in email else "",
+            "celular": celular,
+            "endereco": endereco,
+            "tipo_doc": tipo_doc,
+            "vendas": [venda_detail] if venda_detail else [],
+            "data_inicio": str(aluno["inicio"]) if aluno["inicio"] else (str(data_venda) if data_venda else ""),
+            "data_fim": str(aluno["fim"]) if aluno["fim"] else "",
+            "meses_curso": aluno["meses"],
+            "cancelou": cancelamento,
+            "data_cancelamento": str(data_cancelamento) if data_cancelamento else "",
+            "renovacoes": 1 if renovacao_str in ("Renovação", "Sim") else 0,
+            "total_gasto": valor_total,
+            "produto_principal": produto,
+            "nivel": nivel,
+            "duracao": duracao_curso or str(aluno["meses"] or ""),
+            "vendedor": vendedor,
             # Vindi placeholders
             "vindi_bills": 0,
             "vindi_total": 0.0,
             "vindi_last_payment": "",
+            "vindi_first_payment": "",
             "vindi_bill_detail": [],
-            # Source tracking
+            # Source
             "fonte_planilha": True,
             "fonte_vindi": False,
         }
 
-print(f"  Unique students from sales: {len(students)}")
+print(f"  Linked Alunos→Vendas: {linked}")
+print(f"  Unlinked (no matching sale_key): {unlinked}")
+print(f"  Unique planilha students: {len(planilha_students)}")
 
-# Second pass: match Vindi data to existing students
-matched_vindi = set()
-for key, student in students.items():
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 4: Read Vindi bills (receitas_all_data.js) — 7,642 bills
+# ═══════════════════════════════════════════════════════════════════════════════
+
+print("\nSTEP 4: Reading Vindi bills from receitas_all_data.js...")
+
+with open(os.path.join(PROJECT, "receitas_all_data.js"), "r") as f:
+    raw_js = f.read()
+
+# Parse: remove 'var data = ' prefix and trailing ';'
+json_str = raw_js.replace("var data = ", "", 1).rstrip().rstrip(";")
+vindi_bills_raw = json.loads(json_str)
+
+print(f"  Total Vindi bills: {len(vindi_bills_raw)}")
+
+# Group by cliente
+vindi_by_client = defaultdict(list)
+for bill in vindi_bills_raw:
+    cliente = (bill.get("cliente", "") or "").strip()
+    if cliente:
+        vindi_by_client[cliente].append(bill)
+
+print(f"  Unique Vindi clients: {len(vindi_by_client)}")
+
+# Build aggregated Vindi records per client
+vindi_aggregated = {}
+for client_name, bills in vindi_by_client.items():
+    total = sum(safe_float(b.get("valor", 0)) for b in bills)
+    dates = [safe_date(b.get("data")) for b in bills]
+    dates = [d for d in dates if d is not None]
+    first_pay = min(dates) if dates else None
+    last_pay = max(dates) if dates else None
+
+    vindi_aggregated[client_name] = {
+        "nome": client_name,
+        "bills": len(bills),
+        "total": total,
+        "first": str(first_pay) if first_pay else "",
+        "last": str(last_pay) if last_pay else "",
+        "bill_detail": [
+            {
+                "data": b.get("data", ""),
+                "valor": safe_float(b.get("valor", 0)),
+                "situacao": b.get("situacao", ""),
+                "mes": b.get("mes", ""),
+                "categoria": b.get("categoria", ""),
+            }
+            for b in sorted(bills, key=lambda x: x.get("data", ""))
+        ],
+    }
+
+# Also read receitas_customers.js for CPF/email enrichment
+print("  Reading receitas_customers.js for CPF/email enrichment...")
+with open(os.path.join(PROJECT, "receitas_customers.js"), "r") as f:
+    cust_js = f.read()
+
+cd_prefix = "var customerData = "
+cd_start = cust_js.index(cd_prefix) + len(cd_prefix)
+cd_end = cust_js.index(";\nvar customerBills")
+customer_data = json.loads(cust_js[cd_start:cd_end])
+
+# Build lookup: vindi client name -> (cpf, email)
+vindi_meta = {}
+for cname, cdata in customer_data.items():
+    vindi_meta[cname] = {
+        "cpf": normalize_cpf(cdata.get("cpf", "")),
+        "email": (cdata.get("email", "") or "").strip().lower(),
+    }
+
+print(f"  Customer metadata loaded: {len(vindi_meta)} entries")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 5: Match Vindi to planilha by email
+# ═══════════════════════════════════════════════════════════════════════════════
+
+print("\nSTEP 5: Matching Vindi → Planilha...")
+
+# Build reverse lookups for planilha students
+planilha_by_email = {}
+planilha_by_cpf = {}
+planilha_by_norm_name = {}
+
+for email_key, student in planilha_students.items():
+    real_email = student["email"]
+    if real_email:
+        planilha_by_email[real_email] = email_key
     cpf = student["cpf"]
-    email = student["email"]
-    nome_lower = student["nome"].lower().strip()
+    if cpf:
+        planilha_by_cpf[cpf] = email_key
+    norm = normalize_name_for_match(student["nome"])
+    if norm:
+        planilha_by_norm_name[norm] = email_key
 
-    vindi = None
-    matched_name = None
+matched_vindi_clients = set()
+match_by_email = 0
+match_by_cpf = 0
+match_by_name = 0
 
-    # Try CPF match first
-    if cpf and cpf in vindi_by_cpf:
-        vindi = vindi_by_cpf[cpf]
-        matched_name = vindi["nome_vindi"]
-    # Then email match
-    elif email and email in vindi_by_email:
-        vindi = vindi_by_email[email]
-        matched_name = vindi["nome_vindi"]
-    # Then name match (fuzzy)
-    else:
-        # Try exact name match
-        for vname_lower, vrec in vindi_by_name_lower.items():
-            if nome_lower == vname_lower:
-                vindi = vrec
-                matched_name = vrec["nome_vindi"]
-                break
+for client_name, vindi_rec in vindi_aggregated.items():
+    meta = vindi_meta.get(client_name, {})
+    v_email = meta.get("email", "")
+    v_cpf = meta.get("cpf", "")
+    matched_key = None
 
-    if vindi:
-        student["vindi_bills"] = vindi["bills"]
-        student["vindi_total"] = vindi["total"]
-        student["vindi_last_payment"] = vindi["last"]
-        student["vindi_bill_detail"] = vindi["bill_detail"]
+    # Try email match first (Vindi cliente email from receitas_customers)
+    if v_email and v_email in planilha_by_email:
+        matched_key = planilha_by_email[v_email]
+        match_by_email += 1
+
+    # Try CPF match
+    if not matched_key and v_cpf and v_cpf in planilha_by_cpf:
+        matched_key = planilha_by_cpf[v_cpf]
+        match_by_cpf += 1
+
+    # Try fuzzy name match (normalize accents, lowercase)
+    if not matched_key:
+        norm_name = normalize_name_for_match(client_name)
+        if norm_name and norm_name in planilha_by_norm_name:
+            matched_key = planilha_by_norm_name[norm_name]
+            match_by_name += 1
+
+    if matched_key:
+        student = planilha_students[matched_key]
+        student["vindi_bills"] = vindi_rec["bills"]
+        student["vindi_total"] = vindi_rec["total"]
+        student["vindi_first_payment"] = vindi_rec["first"]
+        student["vindi_last_payment"] = vindi_rec["last"]
+        student["vindi_bill_detail"] = vindi_rec["bill_detail"]
         student["fonte_vindi"] = True
-        if matched_name:
-            matched_vindi.add(matched_name)
+        matched_vindi_clients.add(client_name)
 
-print(f"  Matched Vindi records: {len(matched_vindi)}")
+total_matched = len(matched_vindi_clients)
+print(f"  Matched by email: {match_by_email}")
+print(f"  Matched by CPF: {match_by_cpf}")
+print(f"  Matched by name (fuzzy): {match_by_name}")
+print(f"  Total matched: {total_matched}")
 
-# Third pass: add Vindi-only customers (not in sales spreadsheet)
-vindi_only = 0
-for name, cust in customer_data.items():
-    if name in matched_vindi:
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 6: Add Vindi-only customers (not in planilha)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+print("\nSTEP 6: Adding Vindi-only customers...")
+
+# Collect all existing emails and CPFs to avoid duplicates
+existing_emails = set()
+existing_cpfs = set()
+existing_norm_names = set()
+for student in planilha_students.values():
+    if student["email"]:
+        existing_emails.add(student["email"])
+    if student["cpf"]:
+        existing_cpfs.add(student["cpf"])
+    n = normalize_name_for_match(student["nome"])
+    if n:
+        existing_norm_names.add(n)
+
+vindi_only_students = {}
+vindi_only_count = 0
+
+for client_name, vindi_rec in vindi_aggregated.items():
+    if client_name in matched_vindi_clients:
         continue
-    cpf = normalize_cpf(cust.get("cpf", ""))
-    email = (cust.get("email", "") or "").lower().strip()
 
-    # Check if already matched by CPF or email
-    already = False
-    if cpf and cpf in {s["cpf"] for s in students.values()}:
-        already = True
-    if not already and email and email in {s["email"] for s in students.values() if s["email"]}:
-        already = True
+    meta = vindi_meta.get(client_name, {})
+    v_email = meta.get("email", "")
+    v_cpf = meta.get("cpf", "")
 
-    if already:
+    # Double-check not already present
+    if v_email and v_email in existing_emails:
         continue
-
-    key = cpf if cpf else (email if email else name.lower().replace(" ", "_"))
-    bills = customer_bills.get(name, [])
+    if v_cpf and v_cpf in existing_cpfs:
+        continue
+    norm = normalize_name_for_match(client_name)
+    if norm and norm in existing_norm_names:
+        continue
 
     # Determine tipo_doc
-    tipo_doc = "CNPJ" if cpf and len(cpf) > 11 else "CPF"
+    tipo_doc = "CNPJ" if v_cpf and len(v_cpf) > 11 else "CPF"
 
-    students[key] = {
-        "cpf": cpf,
-        "nome": title_name(name),
-        "email": email,
+    key = v_email if v_email else (v_cpf if v_cpf else f"vindi_{client_name.lower().replace(' ', '_')}")
+
+    vindi_only_students[key] = {
+        "cpf": v_cpf,
+        "nome": title_name(client_name),
+        "email": v_email,
         "celular": "",
         "endereco": "",
         "tipo_doc": tipo_doc,
         "vendas": [],
-        "data_inicio": cust.get("first", ""),
-        "data_fim": cust.get("last", ""),
-        "cancelou": cust.get("cancelamento", False),
+        "data_inicio": vindi_rec["first"],
+        "data_fim": vindi_rec["last"],
+        "meses_curso": 0,
+        "cancelou": False,
         "data_cancelamento": "",
-        "renovacoes": 1 if cust.get("renovacao", False) else 0,
+        "renovacoes": 0,
         "total_gasto": 0.0,
-        "produto_principal": cust.get("produto", ""),
+        "produto_principal": "",
         "nivel": "",
         "duracao": "",
-        "vindi_bills": cust.get("bills", 0),
-        "vindi_total": cust.get("total", 0.0),
-        "vindi_last_payment": cust.get("last", ""),
-        "vindi_bill_detail": bills,
+        "vendedor": "",
+        "vindi_bills": vindi_rec["bills"],
+        "vindi_total": vindi_rec["total"],
+        "vindi_first_payment": vindi_rec["first"],
+        "vindi_last_payment": vindi_rec["last"],
+        "vindi_bill_detail": vindi_rec["bill_detail"],
         "fonte_planilha": False,
         "fonte_vindi": True,
     }
-    vindi_only += 1
+    vindi_only_count += 1
 
-print(f"  Vindi-only customers added: {vindi_only}")
-print(f"  Total consolidated students: {len(students)}")
+    # Track to avoid dupes within Vindi-only
+    if v_email:
+        existing_emails.add(v_email)
+    if v_cpf:
+        existing_cpfs.add(v_cpf)
+    if norm:
+        existing_norm_names.add(norm)
 
-# ─── Step 4: Classify and finalize ───────────────────────────────────────────
+print(f"  Vindi-only customers added: {vindi_only_count}")
 
-print("Classifying and finalizing records...")
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 7: Merge all students and classify
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# Separate planilha students (229 records) from vindi-only
-planilha_students = {}
+print("\nSTEP 7: Merging and classifying all students...")
+
 all_students = {}
+all_students.update(planilha_students)
+all_students.update(vindi_only_students)
 
-for key, s in students.items():
+for key, s in all_students.items():
     # Classify modalidade
     s["modalidade"] = classify_modalidade(s["produto_principal"], s["tipo_doc"])
 
     # Determine tipo_cliente
     s["tipo_cliente"] = "PJ" if s["tipo_doc"] == "CNPJ" else "PF"
 
+    # Determine data_fim if missing
+    data_fim = safe_date(s["data_fim"])
+
     # Determine status
-    data_fim = safe_date(s["data_fim"]) if s["data_fim"] else None
-    s["contrato_ativo"] = False
     s["status"] = determine_status(
         s["cancelou"],
-        s.get("data_cancelamento"),
         data_fim,
-        s["vindi_last_payment"]
+        s["vindi_last_payment"],
+        s["fonte_planilha"],
     )
-    if s["status"] == "Ativo":
-        s["contrato_ativo"] = True
+
+    s["contrato_ativo"] = "Ativo" in s["status"]
 
     # Estimate remaining classes
     dur = 0
     try:
         dur = int(s["duracao"]) if s["duracao"] else 0
-    except:
-        dur = 12  # default
+    except (ValueError, TypeError):
+        dur = 12
     s["aulas_remanescentes"] = estimate_remaining_classes(
         s["data_inicio"], dur if dur else 12, s["status"]
     )
 
-    all_students[key] = s
-    if s["fonte_planilha"]:
-        planilha_students[key] = s
+    # Meses restantes
+    s["meses_restantes"] = compute_meses_restantes(s["data_fim"], s["status"])
 
-# ─── Compute stats (planilha-based: 229 original records) ────────────────────
+    # Fonte label
+    if s["fonte_planilha"] and s["fonte_vindi"]:
+        s["fonte"] = "Planilha+Vindi"
+    elif s["fonte_planilha"]:
+        s["fonte"] = "Planilha"
+    else:
+        s["fonte"] = "Vindi"
 
-# For the stats object we focus on the 229 planilha students
-stats_source = planilha_students
-
-total = len(stats_source)
-ativos = sum(1 for s in stats_source.values() if s["status"] == "Ativo")
-cancelados = sum(1 for s in stats_source.values() if s["status"] == "Cancelado")
-concluidos = sum(1 for s in stats_source.values() if s["status"] == "Concluido")
-expirados = sum(1 for s in stats_source.values() if s["status"] == "Expirado")
-pf = sum(1 for s in stats_source.values() if s["tipo_cliente"] == "PF")
-pj = sum(1 for s in stats_source.values() if s["tipo_cliente"] == "PJ")
-community = sum(1 for s in stats_source.values() if s["modalidade"] == "Community")
-community_flow = sum(1 for s in stats_source.values() if s["modalidade"] == "Community Flow")
-espanhol = sum(1 for s in stats_source.values() if s["modalidade"] == "Espanhol")
-private = sum(1 for s in stats_source.values() if s["modalidade"] == "Private")
-in_company = sum(1 for s in stats_source.values() if s["modalidade"] == "In-Company")
-renovacoes_total = sum(s["renovacoes"] for s in stats_source.values())
-total_gasto = sum(s["total_gasto"] for s in stats_source.values())
-
-# Also compute total including Vindi-only
 total_all = len(all_students)
-ativos_all = sum(1 for s in all_students.values() if s["status"] == "Ativo")
-vindi_only_count = sum(1 for s in all_students.values() if not s["fonte_planilha"])
+planilha_count = sum(1 for s in all_students.values() if s["fonte_planilha"])
+vindi_only_final = sum(1 for s in all_students.values() if not s["fonte_planilha"])
+matched_count = sum(1 for s in all_students.values() if s["fonte_planilha"] and s["fonte_vindi"])
 
-print(f"\n=== STATS (229 Planilha) ===")
-print(f"  Total: {total}")
-print(f"  Ativos: {ativos}, Cancelados: {cancelados}, Expirados: {expirados}")
-print(f"  PF: {pf}, PJ: {pj}")
-print(f"  Community: {community}, Flow: {community_flow}, Espanhol: {espanhol}, Private: {private}, InCo: {in_company}")
+# Status counts
+ativos = sum(1 for s in all_students.values() if "Ativo" in s["status"])
+cancelados = sum(1 for s in all_students.values() if s["status"] == "Cancelado")
+expirados = sum(1 for s in all_students.values() if s["status"] == "Expirado")
+inativos = sum(1 for s in all_students.values() if s["status"] == "Inativo")
+
+# Modalidade counts
+community = sum(1 for s in all_students.values() if s["modalidade"] == "Community")
+community_flow = sum(1 for s in all_students.values() if s["modalidade"] == "Community Flow")
+espanhol = sum(1 for s in all_students.values() if s["modalidade"] == "Espanhol")
+private = sum(1 for s in all_students.values() if s["modalidade"] == "Private")
+in_company = sum(1 for s in all_students.values() if s["modalidade"] == "In-Company")
+
+# Financeiro
+renovacoes_total = sum(s["renovacoes"] for s in all_students.values())
+total_planilha_valor = sum(s["total_gasto"] for s in all_students.values())
+total_vindi_valor = sum(s["vindi_total"] for s in all_students.values())
+
+print(f"\n{'=' * 70}")
+print(f"CONSOLIDATED DATABASE")
+print(f"{'=' * 70}")
+print(f"  Total students: {total_all}")
+print(f"  Planilha: {planilha_count} | Vindi-only: {vindi_only_final} | Matched: {matched_count}")
+print(f"  Ativos: {ativos} | Cancelados: {cancelados} | Expirados: {expirados} | Inativos: {inativos}")
+print(f"  Community: {community} | Flow: {community_flow} | Espanhol: {espanhol} | Private: {private} | In-Company: {in_company}")
 print(f"  Renovacoes: {renovacoes_total}")
-print(f"  Total gasto: R$ {total_gasto:,.2f}")
-print(f"\n=== ALL (incl Vindi-only) ===")
-print(f"  Total: {total_all}, Vindi-only: {vindi_only_count}, Ativos all: {ativos_all}")
+print(f"  Total planilha: R$ {total_planilha_valor:,.2f}")
+print(f"  Total vindi: R$ {total_vindi_valor:,.2f}")
 
-# ─── Step 5: Generate alunos_data.js ─────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 8: Generate alunos_data.js
+# ═══════════════════════════════════════════════════════════════════════════════
 
-print("\nGenerating alunos_data.js...")
+print(f"\nSTEP 8: Generating alunos_data.js...")
 
 
 def serialize_student(s):
-    """Convert student dict to JSON-safe dict."""
+    """Convert student dict to JSON-safe dict matching HTML expectations."""
     return {
         "cpf": s["cpf"],
         "nome": s["nome"],
         "email": s["email"],
         "celular": s["celular"],
-        "endereco": s["endereco"],
+        "endereco": s.get("endereco", ""),
         "tipo_doc": s["tipo_doc"],
         "tipo_cliente": s["tipo_cliente"],
         "modalidade": s["modalidade"],
@@ -581,38 +797,40 @@ def serialize_student(s):
         "total_gasto": round(s["total_gasto"], 2),
         "status": s["status"],
         "aulas_remanescentes": s["aulas_remanescentes"],
+        "meses_restantes": s.get("meses_restantes", 0),
         "vendas": s["vendas"],
         "vindi_bills": s["vindi_bills"],
         "vindi_total": round(s["vindi_total"], 2),
+        "vindi_first_payment": s.get("vindi_first_payment", ""),
         "vindi_last_payment": s["vindi_last_payment"],
         "vindi_bill_detail": s["vindi_bill_detail"],
         "fonte_planilha": s["fonte_planilha"],
         "fonte_vindi": s["fonte_vindi"],
+        "fonte": s["fonte"],
+        "vendedor": s.get("vendedor", ""),
     }
 
 
-# Sort all by name
 sorted_students = sorted(all_students.values(), key=lambda s: s["nome"].lower())
 alunos_array = [serialize_student(s) for s in sorted_students]
 
 stats_obj = {
-    "total": total,
-    "total_all": total_all,
+    "total": total_all,
     "ativos": ativos,
-    "ativos_all": ativos_all,
     "cancelados": cancelados,
-    "concluidos": concluidos,
     "expirados": expirados,
-    "pf": pf,
-    "pj": pj,
+    "inativos": inativos,
+    "planilha": planilha_count,
+    "vindi_only": vindi_only_final,
+    "matched": matched_count,
     "community": community,
     "community_flow": community_flow,
     "espanhol": espanhol,
     "private": private,
     "in_company": in_company,
     "renovacoes": renovacoes_total,
-    "total_gasto": round(total_gasto, 2),
-    "vindi_only": vindi_only_count,
+    "total_planilha": round(total_planilha_valor, 2),
+    "total_vindi": round(total_vindi_valor, 2),
 }
 
 js_content = "var alunosData = " + json.dumps(alunos_array, ensure_ascii=False, indent=1) + ";\n\n"
@@ -621,16 +839,18 @@ js_content += "var alunosStats = " + json.dumps(stats_obj, ensure_ascii=False, i
 with open(os.path.join(PROJECT, "alunos_data.js"), "w") as f:
     f.write(js_content)
 
-print(f"  alunos_data.js written ({len(alunos_array)} students, {len(js_content)} chars)")
+print(f"  alunos_data.js written ({len(alunos_array)} students, {len(js_content):,} chars)")
 
-# ─── Step 6: Generate Excel ──────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 9: Generate Alunos_Base_Completa.xlsx (6 tabs)
+# ═══════════════════════════════════════════════════════════════════════════════
 
-print("\nGenerating Alunos_Base_Completa.xlsx...")
+print(f"\nSTEP 9: Generating Alunos_Base_Completa.xlsx...")
 
 # Style definitions
 header_font = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
+header_fill_green = PatternFill(start_color="0D7C3F", end_color="0D7C3F", fill_type="solid")
 header_fill_blue = PatternFill(start_color="1E3A5F", end_color="1E3A5F", fill_type="solid")
-header_fill_green = PatternFill(start_color="0D5E3A", end_color="0D5E3A", fill_type="solid")
 header_fill_red = PatternFill(start_color="7A1F1F", end_color="7A1F1F", fill_type="solid")
 header_fill_purple = PatternFill(start_color="4A1D8A", end_color="4A1D8A", fill_type="solid")
 header_fill_cyan = PatternFill(start_color="0E7490", end_color="0E7490", fill_type="solid")
@@ -639,6 +859,7 @@ header_fill_amber = PatternFill(start_color="92400E", end_color="92400E", fill_t
 fill_active = PatternFill(start_color="D1FAE5", end_color="D1FAE5", fill_type="solid")
 fill_cancel = PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid")
 fill_expired = PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid")
+fill_inactive = PatternFill(start_color="E5E7EB", end_color="E5E7EB", fill_type="solid")
 
 thin_border = Border(
     left=Side(style="thin", color="D1D5DB"),
@@ -648,80 +869,81 @@ thin_border = Border(
 )
 
 align_center = Alignment(horizontal="center", vertical="center")
-align_wrap = Alignment(horizontal="left", vertical="center", wrap_text=True)
-
-# Use planilha students only for the Excel (229 core records)
-planilha_list = sorted(planilha_students.values(), key=lambda s: s["nome"].lower())
 
 XL_HEADERS = [
-    "Nome", "CPF/CNPJ", "Tipo Doc", "Email", "Celular", "Endereco",
-    "Modalidade", "Nivel", "Produto", "Status",
-    "Data Inicio", "Data Fim", "Contrato Ativo",
-    "Cancelou", "Data Cancelamento", "Renovacoes",
-    "Total Gasto (R$)", "Vindi Bills", "Vindi Total (R$)", "Vindi Ultimo Pgto",
-    "Tipo Cliente", "Aulas Remanescentes",
-    "Vendedor", "Forma Pgto",
-    "Fonte Planilha", "Fonte Vindi",
+    "Nome", "Email", "CPF/CNPJ", "Celular", "Endereco", "Tipo Doc",
+    "Modalidade", "Nivel", "Produto", "Data Inicio", "Data Fim",
+    "Meses Curso", "Valor Planilha (R$)", "Renovacao", "Vendedor",
+    "Cancelamento", "Data Cancelamento",
+    "Status", "Vindi Bills", "Vindi Total (R$)",
+    "Vindi Primeiro Pgto", "Vindi Ultimo Pgto", "Fonte",
 ]
 
 
-def write_student_row(ws, row, s, headers_map=None):
-    """Write a student row to worksheet."""
-    # Get first sale for vendedor/forma
-    vendedor = ""
-    forma = ""
-    if s["vendas"]:
+def write_student_row(ws, row, s):
+    """Write student row to worksheet."""
+    vendedor = s.get("vendedor", "")
+    if not vendedor and s["vendas"]:
         vendedor = s["vendas"][-1].get("vendedor", "")
-        forma = s["vendas"][-1].get("forma", "")
+
+    renovacao_label = ""
+    if s["renovacoes"] > 0:
+        renovacao_label = "Renovacao"
+    elif s["vendas"]:
+        last_renov = s["vendas"][-1].get("renovacao", "")
+        if last_renov:
+            renovacao_label = last_renov
+    else:
+        renovacao_label = "Novo"
 
     values = [
         s["nome"],
-        s["cpf"],
-        s["tipo_doc"],
         s["email"],
+        s["cpf"],
         s["celular"],
-        s["endereco"],
+        s.get("endereco", ""),
+        s["tipo_doc"],
         s["modalidade"],
         s["nivel"],
         s["produto_principal"],
-        s["status"],
         s["data_inicio"],
         s["data_fim"],
-        "Sim" if s["contrato_ativo"] else "Nao",
-        "Sim" if s["cancelou"] else "Nao",
-        s["data_cancelamento"],
-        s["renovacoes"],
+        s.get("meses_curso", 0) or "",
         round(s["total_gasto"], 2),
+        renovacao_label,
+        vendedor,
+        "Sim" if s["cancelou"] else "",
+        s["data_cancelamento"],
+        s["status"],
         s["vindi_bills"],
         round(s["vindi_total"], 2),
+        s.get("vindi_first_payment", ""),
         s["vindi_last_payment"],
-        s["tipo_cliente"],
-        s["aulas_remanescentes"],
-        vendedor,
-        forma,
-        "Sim" if s["fonte_planilha"] else "Nao",
-        "Sim" if s["fonte_vindi"] else "Nao",
+        s.get("fonte", ""),
     ]
 
     for col, val in enumerate(values, 1):
         cell = ws.cell(row=row, column=col, value=val)
         cell.border = thin_border
         cell.alignment = Alignment(vertical="center")
-        if col in (11, 12, 15, 20):  # date columns
+        if col in (10, 11, 17, 21, 22):  # date columns
             cell.alignment = align_center
-        if col in (16, 17, 18, 19, 22):  # number columns
+        if col in (12, 13, 19, 20):  # number columns
             cell.alignment = align_center
-            if col in (17, 19):
+            if col in (13, 20):
                 cell.number_format = '#,##0.00'
 
     # Color status cell
-    status_cell = ws.cell(row=row, column=10)
-    if s["status"] == "Ativo":
+    status_cell = ws.cell(row=row, column=18)
+    status_val = s["status"]
+    if "Ativo" in status_val:
         status_cell.fill = fill_active
-    elif s["status"] == "Cancelado":
+    elif status_val == "Cancelado":
         status_cell.fill = fill_cancel
-    elif s["status"] == "Expirado":
+    elif status_val == "Expirado":
         status_cell.fill = fill_expired
+    elif status_val == "Inativo":
+        status_cell.fill = fill_inactive
 
 
 def write_headers(ws, headers, fill):
@@ -736,7 +958,8 @@ def write_headers(ws, headers, fill):
 def auto_width(ws, headers):
     for col, h in enumerate(headers, 1):
         max_len = len(h) + 2
-        for row in range(2, ws.max_row + 1):
+        sample_rows = min(ws.max_row, 200)
+        for row in range(2, sample_rows + 1):
             val = ws.cell(row=row, column=col).value
             if val:
                 max_len = max(max_len, min(len(str(val)) + 2, 50))
@@ -747,57 +970,68 @@ def add_filters(ws, headers):
     ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{ws.max_row}"
 
 
-# Create workbook
+# Sort all by name
+all_sorted = sorted(all_students.values(), key=lambda s: s["nome"].lower())
+
 xwb = openpyxl.Workbook()
 
-# ─── Tab 1: Base Completa ────────────────────────────────────────────────────
+# Tab 1: Base Completa — ALL students
 ws1 = xwb.active
 ws1.title = "Base Completa"
-write_headers(ws1, XL_HEADERS, header_fill_blue)
-for i, s in enumerate(planilha_list):
+write_headers(ws1, XL_HEADERS, header_fill_green)
+for i, s in enumerate(all_sorted):
     write_student_row(ws1, i + 2, s)
 auto_width(ws1, XL_HEADERS)
 add_filters(ws1, XL_HEADERS)
 ws1.freeze_panes = "A2"
+print(f"  Base Completa: {len(all_sorted)} rows")
 
-# ─── Tab 2: Ativos ──────────────────────────────────────────────────────────
+# Tab 2: Ativos — status contains "Ativo"
 ws2 = xwb.create_sheet("Ativos")
-ativos_list = [s for s in planilha_list if s["status"] == "Ativo"]
-write_headers(ws2, XL_HEADERS, header_fill_green)
+ativos_list = [s for s in all_sorted if "Ativo" in s["status"]]
+write_headers(ws2, XL_HEADERS, header_fill_blue)
 for i, s in enumerate(ativos_list):
     write_student_row(ws2, i + 2, s)
 auto_width(ws2, XL_HEADERS)
 add_filters(ws2, XL_HEADERS)
 ws2.freeze_panes = "A2"
+print(f"  Ativos: {len(ativos_list)} rows")
 
-# ─── Tab 3: Cancelados ──────────────────────────────────────────────────────
+# Tab 3: Cancelados
 ws3 = xwb.create_sheet("Cancelados")
-cancel_list = [s for s in planilha_list if s["status"] == "Cancelado"]
+cancel_list = [s for s in all_sorted if s["status"] == "Cancelado"]
 write_headers(ws3, XL_HEADERS, header_fill_red)
 for i, s in enumerate(cancel_list):
     write_student_row(ws3, i + 2, s)
 auto_width(ws3, XL_HEADERS)
 add_filters(ws3, XL_HEADERS)
 ws3.freeze_panes = "A2"
+print(f"  Cancelados: {len(cancel_list)} rows")
 
-# ─── Tab 4: Renovacoes ──────────────────────────────────────────────────────
-ws4 = xwb.create_sheet("Renovacoes")
-renov_list = [s for s in planilha_list if s["renovacoes"] > 0]
+# Tab 4: Renovacoes
+ws4 = xwb.create_sheet(u"Renovações")
+renov_list = [s for s in all_sorted if s["renovacoes"] > 0 or
+              any(v.get("renovacao", "") in ("Renovação", "Sim") for v in s.get("vendas", []))]
 write_headers(ws4, XL_HEADERS, header_fill_purple)
 for i, s in enumerate(renov_list):
     write_student_row(ws4, i + 2, s)
 auto_width(ws4, XL_HEADERS)
 add_filters(ws4, XL_HEADERS)
 ws4.freeze_panes = "A2"
+print(f"  Renovacoes: {len(renov_list)} rows")
 
-# ─── Tab 5: Para Importacao Portal ──────────────────────────────────────────
-ws5 = xwb.create_sheet("Para Importacao Portal")
-PORTAL_HEADERS = ["Nome", "Email", "CPF", "Celular", "Modalidade", "Nivel", "Status", "Aulas Remanescentes"]
+# Tab 5: Para Importacao Portal
+ws5 = xwb.create_sheet(u"Para Importação Portal")
+PORTAL_HEADERS = ["Nome", "Email", "CPF", "Celular", "Modalidade", "Nivel", "Status", "Meses Restantes"]
+portal_list = [s for s in all_sorted if "Ativo" in s["status"]]
 write_headers(ws5, PORTAL_HEADERS, header_fill_cyan)
-portal_list = [s for s in planilha_list if s["status"] == "Ativo"]
 for i, s in enumerate(portal_list):
     row = i + 2
-    values = [s["nome"], s["email"], s["cpf"], s["celular"], s["modalidade"], s["nivel"], s["status"], s["aulas_remanescentes"]]
+    values = [
+        s["nome"], s["email"], s["cpf"], s["celular"],
+        s["modalidade"], s["nivel"], s["status"],
+        s.get("meses_restantes", 0),
+    ]
     for col, val in enumerate(values, 1):
         cell = ws5.cell(row=row, column=col, value=val)
         cell.border = thin_border
@@ -805,23 +1039,23 @@ for i, s in enumerate(portal_list):
 auto_width(ws5, PORTAL_HEADERS)
 add_filters(ws5, PORTAL_HEADERS)
 ws5.freeze_panes = "A2"
+print(f"  Para Importacao Portal: {len(portal_list)} rows")
 
-# ─── Tab 6: Resumo ──────────────────────────────────────────────────────────
+# Tab 6: Resumo
 ws6 = xwb.create_sheet("Resumo")
 
 summary_data = [
     ("Metrica", "Valor"),
-    ("Total Alunos (Planilha)", total),
-    ("Total Consolidado (incl. Vindi)", total_all),
+    ("Total Alunos (Base Consolidada)", total_all),
+    ("Planilha de Vendas", planilha_count),
+    ("Apenas Vindi", vindi_only_final),
+    ("Cruzados (Planilha + Vindi)", matched_count),
     ("", ""),
     ("STATUS", ""),
     ("Ativos", ativos),
     ("Cancelados", cancelados),
     ("Expirados", expirados),
-    ("", ""),
-    ("TIPO CLIENTE", ""),
-    ("Pessoa Fisica (PF)", pf),
-    ("Pessoa Juridica (PJ)", pj),
+    ("Inativos", inativos),
     ("", ""),
     ("MODALIDADE", ""),
     ("Community", community),
@@ -831,12 +1065,9 @@ summary_data = [
     ("In-Company", in_company),
     ("", ""),
     ("FINANCEIRO", ""),
-    ("Total Gasto (Planilha)", f"R$ {total_gasto:,.2f}"),
+    ("Total Planilha (R$)", f"R$ {total_planilha_valor:,.2f}"),
+    ("Total Vindi (R$)", f"R$ {total_vindi_valor:,.2f}"),
     ("Renovacoes", renovacoes_total),
-    ("", ""),
-    ("VINDI", ""),
-    ("Clientes apenas Vindi", vindi_only_count),
-    ("Ativos (todos)", ativos_all),
     ("", ""),
     ("Gerado em", str(TODAY)),
 ]
@@ -851,21 +1082,25 @@ for r, (metric, val) in enumerate(summary_data, 1):
         c1.fill = header_fill_amber
         c2.font = header_font
         c2.fill = header_fill_amber
-    elif metric in ("STATUS", "TIPO CLIENTE", "MODALIDADE", "FINANCEIRO", "VINDI"):
-        c1.font = Font(bold=True)
+    elif metric in ("STATUS", "MODALIDADE", "FINANCEIRO"):
+        c1.font = Font(bold=True, size=11)
 
-ws6.column_dimensions["A"].width = 35
-ws6.column_dimensions["B"].width = 25
+ws6.column_dimensions["A"].width = 40
+ws6.column_dimensions["B"].width = 30
 
-# Save
+# Save Excel
 excel_path = os.path.join(PROJECT, "Alunos_Base_Completa.xlsx")
 xwb.save(excel_path)
-print(f"  Excel saved to {excel_path}")
-print(f"  Tabs: {xwb.sheetnames}")
-print(f"  Base Completa: {len(planilha_list)} rows")
-print(f"  Ativos: {len(ativos_list)} rows")
-print(f"  Cancelados: {len(cancel_list)} rows")
-print(f"  Renovacoes: {len(renov_list)} rows")
-print(f"  Portal: {len(portal_list)} rows")
+print(f"  Excel saved: {excel_path}")
 
-print("\n=== DONE ===")
+# ═══════════════════════════════════════════════════════════════════════════════
+# DONE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+print(f"\n{'=' * 70}")
+print("BUILD COMPLETE")
+print(f"{'=' * 70}")
+print(f"  alunos_data.js: {len(alunos_array)} students")
+print(f"  Alunos_Base_Completa.xlsx: 6 tabs")
+print(f"  Total: {total_all} | Planilha: {planilha_count} | Vindi-only: {vindi_only_final} | Matched: {matched_count}")
+print(f"  Ativos: {ativos} | Cancelados: {cancelados} | Expirados: {expirados} | Inativos: {inativos}")

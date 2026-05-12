@@ -76,6 +76,7 @@ tr.clickable{cursor:pointer}
 .badge-cancelado{background:#450a0a;color:#fca5a5}
 .badge-expirado{background:#451a03;color:#fbbf24}
 .badge-concluido{background:#172554;color:#60a5fa}
+.badge-inativo{background:#1e293b;color:#94a3b8;border:1px solid #475569}
 
 /* Source badges */
 .src-badge{display:inline-block;padding:1px 5px;border-radius:6px;font-size:9px;font-weight:500;margin-left:2px}
@@ -137,7 +138,7 @@ tr.clickable{cursor:pointer}
 <div class="header">
 <div>
 <h1>Base de Alunos</h1>
-<div class="sub">Consolidado: Planilha de Vendas + Vindi API | <span id="total-label">0</span> alunos mapeados</div>
+<div class="sub">Consolidado: Planilha de Vendas + Vindi (receitas) | <span id="total-label">0</span> alunos mapeados</div>
 </div>
 <a href="index.html" class="back">Voltar ao Painel</a>
 </div>
@@ -146,12 +147,12 @@ tr.clickable{cursor:pointer}
 
 <!-- Summary Cards -->
 <div class="summary" id="summary-cards">
-<div class="card cyan"><div class="val" id="s-total">-</div><div class="lbl">Total Alunos</div></div>
+<div class="card cyan"><div class="val" id="s-total">-</div><div class="lbl">Total Base</div></div>
 <div class="card green"><div class="val" id="s-ativos">-</div><div class="lbl">Ativos</div></div>
 <div class="card red"><div class="val" id="s-cancelados">-</div><div class="lbl">Cancelados</div></div>
 <div class="card amber"><div class="val" id="s-expirados">-</div><div class="lbl">Expirados</div></div>
-<div class="card purple"><div class="val" id="s-renovacoes">-</div><div class="lbl">Renovacoes</div></div>
-<div class="card blue"><div class="val" id="s-total-all">-</div><div class="lbl">Total (incl. Vindi)</div></div>
+<div class="card purple"><div class="val" id="s-inativos">-</div><div class="lbl">Inativos</div></div>
+<div class="card blue"><div class="val" id="s-planilha">-</div><div class="lbl">Planilha</div></div>
 </div>
 
 <!-- Modalidade Breakdown -->
@@ -166,6 +167,7 @@ tr.clickable{cursor:pointer}
 <button class="tab" data-tab="ativos" id="tab-ativos">Ativos <span class="count" id="tc-ativos">0</span></button>
 <button class="tab" data-tab="cancelados" id="tab-cancelados">Cancelados <span class="count" id="tc-cancelados">0</span></button>
 <button class="tab" data-tab="expirados" id="tab-expirados">Expirados <span class="count" id="tc-expirados">0</span></button>
+<button class="tab" data-tab="inativos" id="tab-inativos">Inativos <span class="count" id="tc-inativos">0</span></button>
 <button class="tab" data-tab="renovacoes" id="tab-renovacoes">Renovacoes <span class="count" id="tc-renovacoes">0</span></button>
 <button class="tab" data-tab="vindi-only" id="tab-vindi">Apenas Vindi <span class="count" id="tc-vindi">0</span></button>
 </div>
@@ -277,29 +279,28 @@ function init() {
 }
 
 // ─── Summary ────────────────────────────────────────────────────────────────
+function isAtivo(a){return a.status && a.status.indexOf("Ativo")!==-1}
 function renderSummary() {
- var planilha = data.filter(function(a){return a.fonte_planilha});
  var all = data;
- var ativos = planilha.filter(function(a){return a.status==="Ativo"}).length;
- var cancelados = planilha.filter(function(a){return a.status==="Cancelado"}).length;
- var expirados = planilha.filter(function(a){return a.status==="Expirado"}).length;
- var renovacoes = 0;
- planilha.forEach(function(a){renovacoes += a.renovacoes});
+ var ativos = all.filter(function(a){return isAtivo(a)}).length;
+ var cancelados = all.filter(function(a){return a.status==="Cancelado"}).length;
+ var expirados = all.filter(function(a){return a.status==="Expirado"}).length;
+ var inativos = all.filter(function(a){return a.status==="Inativo"}).length;
+ var planilha = all.filter(function(a){return a.fonte_planilha}).length;
 
- document.getElementById("s-total").textContent = planilha.length.toLocaleString("pt-BR");
+ document.getElementById("s-total").textContent = all.length.toLocaleString("pt-BR");
  document.getElementById("s-ativos").textContent = ativos.toLocaleString("pt-BR");
  document.getElementById("s-cancelados").textContent = cancelados.toLocaleString("pt-BR");
  document.getElementById("s-expirados").textContent = expirados.toLocaleString("pt-BR");
- document.getElementById("s-renovacoes").textContent = renovacoes.toLocaleString("pt-BR");
- document.getElementById("s-total-all").textContent = all.length.toLocaleString("pt-BR");
- document.getElementById("total-label").textContent = planilha.length.toLocaleString("pt-BR");
+ document.getElementById("s-inativos").textContent = inativos.toLocaleString("pt-BR");
+ document.getElementById("s-planilha").textContent = planilha.toLocaleString("pt-BR");
+ document.getElementById("total-label").textContent = all.length.toLocaleString("pt-BR");
 }
 
 // ─── Modalidade cards ───────────────────────────────────────────────────────
 function renderModalidade() {
- var planilha = data.filter(function(a){return a.fonte_planilha});
  var mods = {};
- planilha.forEach(function(a){
+ data.forEach(function(a){
   var m = a.modalidade || "Desconhecido";
   mods[m] = (mods[m]||0) + 1;
  });
@@ -315,13 +316,14 @@ function renderModalidade() {
 
 // ─── Tab counts ─────────────────────────────────────────────────────────────
 function updateTabCounts() {
- var planilha = data.filter(function(a){return a.fonte_planilha});
+ var all = data;
  var vindiOnly = data.filter(function(a){return !a.fonte_planilha});
- document.getElementById("tc-todos").textContent = planilha.length;
- document.getElementById("tc-ativos").textContent = planilha.filter(function(a){return a.status==="Ativo"}).length;
- document.getElementById("tc-cancelados").textContent = planilha.filter(function(a){return a.status==="Cancelado"}).length;
- document.getElementById("tc-expirados").textContent = planilha.filter(function(a){return a.status==="Expirado"}).length;
- var renov = planilha.filter(function(a){return a.renovacoes > 0});
+ document.getElementById("tc-todos").textContent = all.length;
+ document.getElementById("tc-ativos").textContent = all.filter(function(a){return isAtivo(a)}).length;
+ document.getElementById("tc-cancelados").textContent = all.filter(function(a){return a.status==="Cancelado"}).length;
+ document.getElementById("tc-expirados").textContent = all.filter(function(a){return a.status==="Expirado"}).length;
+ document.getElementById("tc-inativos").textContent = all.filter(function(a){return a.status==="Inativo"}).length;
+ var renov = all.filter(function(a){return a.renovacoes > 0});
  document.getElementById("tc-renovacoes").textContent = renov.length;
  document.getElementById("tc-vindi").textContent = vindiOnly.length;
 }
@@ -335,13 +337,14 @@ function applyFilters() {
 
  // Base set based on tab
  var base;
- if(currentTab === "todos") base = data.filter(function(a){return a.fonte_planilha});
- else if(currentTab === "ativos") base = data.filter(function(a){return a.fonte_planilha && a.status==="Ativo"});
- else if(currentTab === "cancelados") base = data.filter(function(a){return a.fonte_planilha && a.status==="Cancelado"});
- else if(currentTab === "expirados") base = data.filter(function(a){return a.fonte_planilha && a.status==="Expirado"});
- else if(currentTab === "renovacoes") base = data.filter(function(a){return a.fonte_planilha && a.renovacoes > 0});
+ if(currentTab === "todos") base = data.slice();
+ else if(currentTab === "ativos") base = data.filter(function(a){return isAtivo(a)});
+ else if(currentTab === "cancelados") base = data.filter(function(a){return a.status==="Cancelado"});
+ else if(currentTab === "expirados") base = data.filter(function(a){return a.status==="Expirado"});
+ else if(currentTab === "inativos") base = data.filter(function(a){return a.status==="Inativo"});
+ else if(currentTab === "renovacoes") base = data.filter(function(a){return a.renovacoes > 0});
  else if(currentTab === "vindi-only") base = data.filter(function(a){return !a.fonte_planilha});
- else base = data.filter(function(a){return a.fonte_planilha});
+ else base = data.slice();
 
  filtered = base.filter(function(a){
   if(search) {
@@ -371,21 +374,21 @@ function applyFilters() {
  });
 
  renderTable();
- var totalBase = currentTab === "vindi-only" ? data.filter(function(a){return !a.fonte_planilha}).length : data.filter(function(a){return a.fonte_planilha}).length;
- document.getElementById("filter-count").textContent = filtered.length + " de " + totalBase;
+ document.getElementById("filter-count").textContent = filtered.length + " de " + base.length;
 }
 
 // ─── Table ──────────────────────────────────────────────────────────────────
 function renderTable() {
  var tbody = document.getElementById("table-body");
- var limit = Math.min(filtered.length, 500); // limit for performance
+ var limit = Math.min(filtered.length, 1000); // limit for performance
  var html = "";
  for(var i = 0; i < limit; i++) {
   var a = filtered[i];
   var statusClass = "";
-  if(a.status === "Ativo") statusClass = "badge-ativo";
+  if(a.status && a.status.indexOf("Ativo")!==-1) statusClass = "badge-ativo";
   else if(a.status === "Cancelado") statusClass = "badge-cancelado";
   else if(a.status === "Expirado") statusClass = "badge-expirado";
+  else if(a.status === "Inativo") statusClass = "badge-inativo";
   else statusClass = "badge-concluido";
 
   var fonteHtml = "";
@@ -409,7 +412,7 @@ function renderTable() {
    '</tr>';
  }
  if(limit < filtered.length) {
-  html += '<tr><td colspan="11" style="text-align:center;color:#64748b;padding:12px">Mostrando '+limit+' de '+filtered.length+' registros</td></tr>';
+  html += '<tr><td colspan="11" style="text-align:center;color:#64748b;padding:12px">Mostrando '+limit+' de '+filtered.length+' registros. Use filtros para refinar.</td></tr>';
  }
  tbody.innerHTML = html;
 }
@@ -421,9 +424,10 @@ window.openModal = function(idx) {
  document.getElementById("modal-name").textContent = a.nome;
 
  var statusClass = "";
- if(a.status === "Ativo") statusClass = "badge-ativo";
+ if(a.status && a.status.indexOf("Ativo")!==-1) statusClass = "badge-ativo";
  else if(a.status === "Cancelado") statusClass = "badge-cancelado";
  else if(a.status === "Expirado") statusClass = "badge-expirado";
+ else if(a.status === "Inativo") statusClass = "badge-inativo";
  else statusClass = "badge-concluido";
 
  var html = '';
@@ -459,7 +463,9 @@ window.openModal = function(idx) {
  html += detailItem("Total Gasto (Planilha)", a.total_gasto > 0 ? "R$ " + a.total_gasto.toLocaleString("pt-BR",{minimumFractionDigits:2}) : "-");
  html += detailItem("Vindi Bills", a.vindi_bills || 0);
  html += detailItem("Vindi Total", a.vindi_total > 0 ? "R$ " + a.vindi_total.toLocaleString("pt-BR",{minimumFractionDigits:2}) : "-");
- html += detailItem("Vindi Ultimo Pagamento", formatDate(a.vindi_last_payment));
+ html += detailItem("Vindi Primeiro Pgto", formatDate(a.vindi_first_payment));
+ html += detailItem("Vindi Ultimo Pgto", formatDate(a.vindi_last_payment));
+ html += detailItem("Fonte", a.fonte || "-");
  html += '</div></div>';
 
  // Purchase history (vendas)
@@ -545,8 +551,8 @@ window.exportCSV = function() {
 };
 
 window.exportPortal = function() {
- var ativos = data.filter(function(a){return a.status==="Ativo" && a.fonte_planilha});
- var headers = ["Nome","Email","CPF","Celular","Modalidade","Nivel","Status","Aulas Remanescentes"];
+ var ativos = data.filter(function(a){return isAtivo(a)});
+ var headers = ["Nome","Email","CPF","Celular","Modalidade","Nivel","Status","Meses Restantes"];
  var rows = [headers.join(",")];
  ativos.forEach(function(a){
   rows.push([
@@ -557,7 +563,7 @@ window.exportPortal = function() {
    a.modalidade,
    a.nivel||"",
    a.status,
-   a.aulas_remanescentes||0
+   a.meses_restantes||0
   ].join(","));
  });
  var blob = new Blob(["﻿"+rows.join("\n")], {type:"text/csv;charset=utf-8"});
