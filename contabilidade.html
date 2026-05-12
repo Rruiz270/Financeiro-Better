@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contabilidade & Auditoria — Better Education</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.header{background:#1e293b;padding:20px 40px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.header h1{font-size:22px;color:#f8fafc}.header h1 span{color:#0d9488}
+.header p{font-size:12px;color:#94a3b8;margin-top:2px}
+.nav{display:flex;gap:6px;flex-wrap:wrap}
+.nav-btn{padding:8px 16px;border-radius:8px;border:1.5px solid #334155;background:transparent;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.nav-btn:hover,.nav-btn.active{background:#0d9488;color:white;border-color:#0d9488}
+.container{max-width:1600px;margin:0 auto;padding:20px}
+.back-link{display:inline-block;margin-bottom:16px;color:#0d9488;font-size:12px;text-decoration:none;opacity:0.8}
+.back-link:hover{opacity:1}
+
+/* Tab navigation between sections */
+.tab-bar{display:flex;gap:4px;margin:16px 0;flex-wrap:wrap}
+.tab-btn{padding:10px 20px;border-radius:8px 8px 0 0;border:1px solid #334155;border-bottom:none;background:#0f172a;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.tab-btn:hover{color:#e2e8f0}
+.tab-btn.active{background:#1e293b;color:#5eead4;border-color:#0d9488}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* Summary cards */
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.cards{grid-template-columns:repeat(2,1fr)}}
+.card{background:#1e293b;border-radius:12px;padding:18px;border:1px solid #334155}
+.card.accent{border-color:#0d9488}
+.card h3{font-size:9px;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px}
+.card .value{font-size:24px;font-weight:700;color:#5eead4}.card .sub{font-size:10px;color:#64748b;margin-top:4px}
+.card .value.green{color:#4ade80}.card .value.red{color:#f87171}.card .value.blue{color:#60a5fa}
+.card .value.amber{color:#fbbf24}.card .value.teal{color:#5eead4}
+
+/* Sections */
+.section{background:#1e293b;border-radius:12px;padding:20px;margin:14px 0;border:1px solid #334155}
+.section.accent-border{border-color:#0d9488}
+.section h2{font-size:15px;color:#f8fafc;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section h2 .icon{color:#0d9488}
+
+/* Tables */
+.scroll-x{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead{background:#0f172a;position:sticky;top:0;z-index:2}
+th{padding:10px 8px;text-align:right;color:#64748b;border-bottom:1px solid #334155;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:8px;border-bottom:1px solid rgba(51,65,85,0.5);text-align:right;white-space:nowrap}
+td:first-child{text-align:left;color:#f8fafc}
+tr:hover{background:rgba(13,148,136,0.05)}
+
+/* DRE specific */
+.dre-label{font-weight:600;color:#f8fafc}
+.dre-group{font-weight:700;color:#5eead4;background:#0f172a}
+.dre-subtotal{font-weight:700;border-top:1px solid #334155}
+.dre-result{font-weight:800;border-top:2px solid #0d9488;background:rgba(13,148,136,0.08)}
+.dre-indent{padding-left:24px !important;font-weight:400;color:#cbd5e1}
+.dre-indent2{padding-left:40px !important;font-weight:400;color:#94a3b8;font-size:10px}
+
+.v-green{color:#4ade80}.v-red{color:#f87171}.v-blue{color:#60a5fa}.v-amber{color:#fbbf24}.v-teal{color:#5eead4}.v-dim{color:#475569}
+
+/* Badge */
+.badge-nf{display:inline-block;padding:2px 8px;border-radius:6px;font-size:9px;font-weight:600;background:#451a03;color:#fbbf24;margin-left:6px;vertical-align:middle}
+.badge-severity{display:inline-block;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;margin-right:8px}
+.sev-alta{background:#450a0a;color:#fca5a5;border:1px solid #991b1b}
+.sev-media{background:#451a03;color:#fbbf24;border:1px solid #92400e}
+.sev-baixa{background:#052e16;color:#4ade80;border:1px solid #166534}
+
+/* Audit findings */
+.finding{background:#0f172a;border:1px solid #334155;border-left:4px solid #0d9488;border-radius:8px;padding:20px;margin:12px 0}
+.finding.sev-alta-card{border-left-color:#f87171}
+.finding.sev-media-card{border-left-color:#fbbf24}
+.finding.sev-baixa-card{border-left-color:#4ade80}
+.finding h3{font-size:14px;color:#f8fafc;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.finding .desc{font-size:12px;color:#cbd5e1;line-height:1.6;margin-bottom:10px}
+.finding .impact{font-size:13px;font-weight:700;color:#f87171;margin-bottom:6px}
+.finding .rec{font-size:11px;color:#94a3b8;padding:10px;background:#1e293b;border-radius:6px;border-left:3px solid #0d9488}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;align-items:center;margin:12px 0;flex-wrap:wrap}
+.filter-bar label{font-size:10px;color:#64748b;text-transform:uppercase}
+.filter-bar select,.filter-bar input{background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:6px 12px;border-radius:6px;font-size:11px}
+.filter-bar input{width:240px}
+
+/* Totals row */
+tr.total-row{background:#0f172a;border-top:2px solid #0d9488}
+tr.total-row td{font-weight:700;padding:12px 8px;color:#5eead4}
+
+.footer{text-align:center;padding:30px;color:#475569;font-size:10px}
+
+/* Print */
+@media print{body{background:white;color:#1e293b}.header,.nav,.tab-bar,.back-link,.filter-bar{display:none !important}.section,.card{border-color:#e2e8f0;background:white}.tab-panel{display:block !important}}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div>
+<h1><span>Contabilidade</span> & Auditoria</h1>
+<p>DRE Mensal | Balancete | Despesas sem NF | Auditoria Operacional Estilo Big 4</p>
+</div>
+<div class="nav" id="yearNav">
+<button class="nav-btn active" onclick="setYear('',this)">Todos</button>
+<button class="nav-btn" onclick="setYear('2024',this)">2024</button>
+<button class="nav-btn" onclick="setYear('2025',this)">2025</button>
+<button class="nav-btn" onclick="setYear('2026',this)">2026</button>
+</div>
+</div>
+
+<div class="container">
+<a href="index.html" class="back-link">&larr; Voltar para Central Financeira</a>
+
+<!-- Summary cards -->
+<div class="cards" id="summaryCards"></div>
+
+<!-- Section tabs -->
+<div class="tab-bar">
+<button class="tab-btn active" onclick="switchTab('dre',this)">DRE Completo</button>
+<button class="tab-btn" onclick="switchTab('balancete',this)">Balancete Mensal</button>
+<button class="tab-btn" onclick="switchTab('semnf',this)">Despesas sem NF</button>
+<button class="tab-btn" onclick="switchTab('auditoria',this)">Auditoria Operacional</button>
+</div>
+
+<!-- TAB 1: DRE -->
+<div class="tab-panel active" id="tab-dre">
+<div class="section accent-border">
+<h2><span class="icon">&#9733;</span> Demonstracao do Resultado do Exercicio (DRE)</h2>
+<p style="font-size:11px;color:#64748b;margin-bottom:16px">Base: Vindi (receitas), Omie Better (despesas operacionais), BMA Omie (folha/beneficios/impostos). Impostos estimados.</p>
+<div class="scroll-x">
+<table id="dreTable"></table>
+</div>
+</div>
+</div>
+
+<!-- TAB 2: Balancete -->
+<div class="tab-panel" id="tab-balancete">
+<div class="section accent-border">
+<h2><span class="icon">&#9733;</span> Balancete Mensal Simplificado</h2>
+<p style="font-size:11px;color:#64748b;margin-bottom:16px">Posicao patrimonial simplificada derivada dos fluxos mensais.</p>
+<div class="scroll-x">
+<table id="balanceteTable"></table>
+</div>
+</div>
+</div>
+
+<!-- TAB 3: Despesas sem NF -->
+<div class="tab-panel" id="tab-semnf">
+<div class="section accent-border">
+<h2><span class="icon">&#9733;</span> Despesas sem Nota Fiscal (Verificar)</h2>
+<p style="font-size:11px;color:#64748b;margin-bottom:16px">Despesas em categorias de prestadores PJ (2.16.xx), prestador de servico em folha (2.03.94), e fornecedores pessoa fisica (CPF no nome).</p>
+<div class="filter-bar">
+<label>Buscar:</label>
+<input type="text" id="nfSearch" placeholder="Fornecedor, categoria..." oninput="renderSemNF()">
+<label>Ano:</label>
+<select id="nfYearFilter" onchange="renderSemNF()">
+<option value="">Todos</option>
+<option value="2024">2024</option>
+<option value="2025">2025</option>
+<option value="2026">2026</option>
+</select>
+</div>
+<div class="scroll-x">
+<table id="semNFTable"></table>
+</div>
+</div>
+</div>
+
+<!-- TAB 4: Auditoria -->
+<div class="tab-panel" id="tab-auditoria">
+<div class="section accent-border">
+<h2><span class="icon">&#9733;</span> Auditoria Operacional — Relatorio de Findings</h2>
+<p style="font-size:11px;color:#64748b;margin-bottom:16px">Analise independente estilo Big 4. Classificacao por severidade e impacto financeiro.</p>
+<div id="findingsContainer"></div>
+</div>
+</div>
+
+</div>
+
+<div class="footer">
+Better Education &copy; 2026 | Contabilidade & Auditoria gerada automaticamente a partir de Vindi + Omie + BMA<br>
+Dados atualizados diariamente as 7h BRT via GitHub Actions
+</div>
+
+<!-- DATA FILES -->
+<script src="dashboard_data.js"></script>
+<script src="bma_data.js"></script>
+<script src="despesas_all_data.js"></script>
+
+<script>
+/* =============== GLOBALS =============== */
+var currentYear = '';
+var currentTab = 'dre';
+
+/* =============== HELPERS =============== */
+function fmt(v) {
+    if (v == null || isNaN(v)) return '-';
+    var neg = v < 0;
+    var abs = Math.abs(v);
+    var s = abs.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    return neg ? '(' + s + ')' : s;
+}
+function fmtK(v) {
+    if (v == null || isNaN(v)) return '-';
+    var neg = v < 0;
+    var abs = Math.abs(v);
+    if (abs >= 1000000) return (neg ? '-' : '') + 'R$ ' + (abs / 1000000).toFixed(2).replace('.', ',') + 'M';
+    if (abs >= 1000) return (neg ? '-' : '') + 'R$ ' + (abs / 1000).toFixed(0) + 'k';
+    return (neg ? '-' : '') + 'R$ ' + abs.toFixed(0);
+}
+function valClass(v) {
+    if (v > 0) return 'v-green';
+    if (v < 0) return 'v-red';
+    return 'v-dim';
+}
+function valTd(v, cls) {
+    var c = cls || valClass(v);
+    return '<td class="' + c + '">' + fmt(v) + '</td>';
+}
+
+/* Build BMA lookup by month */
+var bmaByMonth = {};
+(typeof bmaDesp !== 'undefined' ? bmaDesp : []).forEach(function(r) {
+    bmaByMonth[r.m] = r.total;
+});
+
+/* =============== FILTER =============== */
+function getFilteredDash() {
+    return dashData.filter(function(r) {
+        if (currentYear && r.y !== currentYear) return false;
+        // Skip future months with no activity
+        if (r.rec === 0 && r.desp === 0 && r.est === 0 && r.pend === 0) return false;
+        return true;
+    });
+}
+
+function setYear(y, btn) {
+    currentYear = y;
+    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    renderAll();
+}
+
+function switchTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    var el = document.getElementById('tab-' + tab);
+    if (el) el.classList.add('active');
+}
+
+/* =============== SUMMARY CARDS =============== */
+function renderSummary() {
+    var rows = getFilteredDash();
+    var totRec = 0, totDesp = 0, totBma = 0, totEst = 0, totPend = 0;
+    rows.forEach(function(r) {
+        totRec += r.rec;
+        totDesp += r.desp;
+        totEst += r.est;
+        totPend += r.pend;
+        totBma += (bmaByMonth[r.m] || 0);
+    });
+    var recLiq = totRec - totEst;
+    var resultado = recLiq - totDesp - totBma;
+    var iss = rows.reduce(function(s, r) { return s + r.nfse * 0.02; }, 0);
+    var simples = totRec * 0.06;
+    var resLiq = resultado - iss - simples;
+
+    var html = '';
+    html += '<div class="card accent"><h3>Receita Operacional Liquida</h3><div class="value teal">' + fmtK(recLiq) + '</div><div class="sub">Receitas - Estornos</div></div>';
+    html += '<div class="card"><h3>Custos + Despesas Totais</h3><div class="value red">' + fmtK(totDesp + totBma) + '</div><div class="sub">Better + BMA</div></div>';
+    html += '<div class="card"><h3>EBITDA Proxy</h3><div class="value ' + (resultado >= 0 ? 'green' : 'red') + '">' + fmtK(resultado) + '</div><div class="sub">Receita Liq - Custos</div></div>';
+    html += '<div class="card"><h3>Impostos Estimados</h3><div class="value amber">' + fmtK(iss + simples) + '</div><div class="sub">ISS 2% + Simples 6%</div></div>';
+    html += '<div class="card"><h3>Resultado Liquido</h3><div class="value ' + (resLiq >= 0 ? 'green' : 'red') + '">' + fmtK(resLiq) + '</div><div class="sub">Apos impostos estimados</div></div>';
+    document.getElementById('summaryCards').innerHTML = html;
+}
+
+/* =============== DRE TABLE =============== */
+function renderDRE() {
+    var rows = getFilteredDash();
+    if (!rows.length) { document.getElementById('dreTable').innerHTML = '<tr><td style="color:#64748b;padding:40px;text-align:center">Sem dados para o periodo selecionado.</td></tr>'; return; }
+
+    // Compute totals column
+    var totals = {rec:0, est:0, desp:0, bma:0, nfse:0};
+    rows.forEach(function(r) {
+        totals.rec += r.rec;
+        totals.est += r.est;
+        totals.desp += r.desp;
+        totals.bma += (bmaByMonth[r.m] || 0);
+        totals.nfse += r.nfse;
+    });
+
+    var months = rows.map(function(r) { return r.m; });
+
+    // Header
+    var html = '<thead><tr><th style="min-width:280px">CONTA</th>';
+    months.forEach(function(m) { html += '<th>' + m + '</th>'; });
+    html += '<th style="border-left:2px solid #0d9488">TOTAL</th></tr></thead><tbody>';
+
+    // DRE Lines definition
+    // Each: [label, cssClass, valueFunction(r), totalValue]
+    var lines = [];
+
+    // RECEITA OPERACIONAL BRUTA
+    lines.push({label: 'RECEITA OPERACIONAL BRUTA', cls: 'dre-group', fn: null, total: null});
+    lines.push({label: '(+) Receitas Vindi (recorrencia)', cls: 'dre-indent', fn: function(r){return r.rec;}, total: totals.rec});
+    lines.push({label: '(-) Estornos e Devolucoes', cls: 'dre-indent', fn: function(r){return -r.est;}, total: -totals.est, neg: true});
+    var recLiqFn = function(r){return r.rec - r.est;};
+    var recLiqTotal = totals.rec - totals.est;
+    lines.push({label: '(=) RECEITA OPERACIONAL LIQUIDA', cls: 'dre-subtotal', fn: recLiqFn, total: recLiqTotal});
+
+    lines.push({label: '', cls: '', fn: null, total: null, spacer: true});
+
+    // CUSTOS E DESPESAS
+    lines.push({label: 'CUSTOS E DESPESAS OPERACIONAIS', cls: 'dre-group', fn: null, total: null});
+    lines.push({label: '(-) Despesas Operacionais (Omie Better)', cls: 'dre-indent', fn: function(r){return -r.desp;}, total: -totals.desp, neg: true});
+    lines.push({label: '(-) BMA - Folha/Beneficios/Impostos', cls: 'dre-indent', fn: function(r){return -(bmaByMonth[r.m]||0);}, total: -totals.bma, neg: true, badge: 'NF Pendente'});
+    var totCustFn = function(r){return -(r.desp + (bmaByMonth[r.m]||0));};
+    var totCustTotal = -(totals.desp + totals.bma);
+    lines.push({label: '(=) TOTAL CUSTOS E DESPESAS', cls: 'dre-subtotal', fn: totCustFn, total: totCustTotal, neg: true});
+
+    lines.push({label: '', cls: '', fn: null, total: null, spacer: true});
+
+    // EBITDA
+    var ebitdaFn = function(r){return (r.rec - r.est) - r.desp - (bmaByMonth[r.m]||0);};
+    var ebitdaTotal = recLiqTotal + totCustTotal;
+    lines.push({label: '(=) RESULTADO OPERACIONAL (EBITDA proxy)', cls: 'dre-result', fn: ebitdaFn, total: ebitdaTotal});
+
+    lines.push({label: '', cls: '', fn: null, total: null, spacer: true});
+
+    // IMPOSTOS
+    lines.push({label: 'IMPOSTOS E TRIBUTOS', cls: 'dre-group', fn: null, total: null});
+    var issFn = function(r){return -(r.nfse * 0.02);};
+    var issTotal = -(totals.nfse * 0.02);
+    lines.push({label: '(-) ISS sobre Servicos (~2% NFS-e)', cls: 'dre-indent', fn: issFn, total: issTotal, neg: true});
+    var simplesFn = function(r){return -(r.rec * 0.06);};
+    var simplesTotal = -(totals.rec * 0.06);
+    lines.push({label: '(-) Simples Nacional (estimado ~6% rec)', cls: 'dre-indent', fn: simplesFn, total: simplesTotal, neg: true});
+
+    lines.push({label: '', cls: '', fn: null, total: null, spacer: true});
+
+    // RESULTADO LIQUIDO
+    var resLiqFn = function(r){return ebitdaFn(r) + issFn(r) + simplesFn(r);};
+    var resLiqTotal = ebitdaTotal + issTotal + simplesTotal;
+    lines.push({label: '(=) RESULTADO LIQUIDO', cls: 'dre-result', fn: resLiqFn, total: resLiqTotal});
+
+    // Render
+    lines.forEach(function(line) {
+        if (line.spacer) { html += '<tr><td colspan="' + (months.length + 2) + '" style="padding:4px;border:none"></td></tr>'; return; }
+        html += '<tr class="' + (line.cls || '') + '">';
+        var labelExtra = '';
+        if (line.badge) labelExtra = ' <span class="badge-nf">' + line.badge + '</span>';
+        html += '<td class="dre-label">' + line.label + labelExtra + '</td>';
+        if (line.fn) {
+            rows.forEach(function(r) {
+                var v = line.fn(r);
+                html += '<td class="' + valClass(v) + '">' + fmt(v) + '</td>';
+            });
+            html += '<td style="border-left:2px solid #0d9488" class="' + valClass(line.total) + '">' + fmt(line.total) + '</td>';
+        } else {
+            for (var i = 0; i <= months.length; i++) html += '<td></td>';
+        }
+        html += '</tr>';
+    });
+
+    html += '</tbody>';
+    document.getElementById('dreTable').innerHTML = html;
+}
+
+/* =============== BALANCETE TABLE =============== */
+function renderBalancete() {
+    var rows = getFilteredDash();
+    if (!rows.length) { document.getElementById('balanceteTable').innerHTML = '<tr><td style="color:#64748b;padding:40px;text-align:center">Sem dados para o periodo selecionado.</td></tr>'; return; }
+
+    var months = rows.map(function(r) { return r.m; });
+
+    var html = '<thead><tr><th style="min-width:280px">CONTA</th>';
+    months.forEach(function(m) { html += '<th>' + m + '</th>'; });
+    html += '</tr></thead><tbody>';
+
+    // Accumulate cash
+    var caixaAcum = 0;
+    var caixaArr = [];
+    // We need cumulative across ALL months up to each filtered month
+    var allSorted = dashData.slice().sort(function(a,b) {
+        var ma = monthOrder(a.m), mb = monthOrder(b.m);
+        return ma - mb;
+    });
+
+    var caixaMap = {};
+    var runCaixa = 0;
+    allSorted.forEach(function(r) {
+        runCaixa += r.rec - r.est - r.desp - (bmaByMonth[r.m]||0);
+        caixaMap[r.m] = runCaixa;
+    });
+
+    // BMA a pagar accumulation
+    var bmaAPagarMap = {};
+    var runBma = 0;
+    allSorted.forEach(function(r) {
+        runBma += (bmaByMonth[r.m]||0);
+        bmaAPagarMap[r.m] = runBma;
+    });
+
+    // Estornos pending accumulation
+    var estAcumMap = {};
+    var runEst = 0;
+    allSorted.forEach(function(r) {
+        runEst += r.est;
+        estAcumMap[r.m] = runEst;
+    });
+
+    // Resultado acumulado
+    var resAcumMap = {};
+    var runRes = 0;
+    allSorted.forEach(function(r) {
+        runRes += r.rec - r.est - r.desp - (bmaByMonth[r.m]||0);
+        resAcumMap[r.m] = runRes;
+    });
+
+    var sections = [
+        {label: 'ATIVO', cls: 'dre-group', fn: null},
+        {label: 'Caixa (Receitas - Despesas acumulado)', cls: 'dre-indent', fn: function(r){ return caixaMap[r.m] || 0; }},
+        {label: 'Contas a Receber (Pendentes Vindi)', cls: 'dre-indent', fn: function(r){ return r.pend; }},
+        {label: 'TOTAL ATIVO', cls: 'dre-subtotal', fn: function(r){ return (caixaMap[r.m]||0) + r.pend; }},
+        {spacer: true},
+        {label: 'PASSIVO', cls: 'dre-group', fn: null},
+        {label: 'BMA a Pagar (acumulado)', cls: 'dre-indent', fn: function(r){ return bmaAPagarMap[r.m]||0; }, badge: 'NF Pendente'},
+        {label: 'Estornos Acumulados', cls: 'dre-indent', fn: function(r){ return estAcumMap[r.m]||0; }},
+        {label: 'TOTAL PASSIVO', cls: 'dre-subtotal', fn: function(r){ return (bmaAPagarMap[r.m]||0) + (estAcumMap[r.m]||0); }},
+        {spacer: true},
+        {label: 'PATRIMONIO LIQUIDO', cls: 'dre-group', fn: null},
+        {label: 'Resultado Acumulado', cls: 'dre-result', fn: function(r){ return resAcumMap[r.m]||0; }},
+    ];
+
+    sections.forEach(function(line) {
+        if (line.spacer) { html += '<tr><td colspan="' + (months.length + 1) + '" style="padding:4px;border:none"></td></tr>'; return; }
+        html += '<tr class="' + (line.cls || '') + '">';
+        var labelExtra = '';
+        if (line.badge) labelExtra = ' <span class="badge-nf">' + line.badge + '</span>';
+        html += '<td class="dre-label">' + line.label + labelExtra + '</td>';
+        if (line.fn) {
+            rows.forEach(function(r) {
+                var v = line.fn(r);
+                html += '<td class="' + valClass(v) + '">' + fmt(v) + '</td>';
+            });
+        } else {
+            for (var i = 0; i < months.length; i++) html += '<td></td>';
+        }
+        html += '</tr>';
+    });
+
+    html += '</tbody>';
+    document.getElementById('balanceteTable').innerHTML = html;
+}
+
+function monthOrder(m) {
+    var parts = m.split('/');
+    var monthNames = {'Jan':1,'Fev':2,'Mar':3,'Abr':4,'Mai':5,'Jun':6,'Jul':7,'Ago':8,'Set':9,'Out':10,'Nov':11,'Dez':12};
+    return parseInt(parts[1]) * 100 + (monthNames[parts[0]] || 0);
+}
+
+/* =============== DESPESAS SEM NF =============== */
+function getSemNFRecords() {
+    if (typeof data === 'undefined') return [];
+    var cpfPattern = /\d{11}/;
+    return data.filter(function(r) {
+        // Category 2.16.xx (prestadores PJ)
+        if (r.categoria && r.categoria.startsWith('2.16.')) return true;
+        // Category 2.03.94 (prestador servico dentro folha)
+        if (r.categoria === '2.03.94') return true;
+        // Fornecedor with CPF in name
+        if (cpfPattern.test(r.fornecedor)) return true;
+        return false;
+    });
+}
+
+function renderSemNF() {
+    var recs = getSemNFRecords();
+    var searchTerm = (document.getElementById('nfSearch').value || '').toLowerCase();
+    var yearFilter = document.getElementById('nfYearFilter').value;
+
+    // Apply filters
+    var filtered = recs.filter(function(r) {
+        if (yearFilter && r.ano !== yearFilter) return false;
+        if (searchTerm) {
+            var haystack = (r.fornecedor + ' ' + r.categoria + ' ' + r.mes).toLowerCase();
+            if (haystack.indexOf(searchTerm) === -1) return false;
+        }
+        return true;
+    });
+
+    // Group by fornecedor
+    var groups = {};
+    filtered.forEach(function(r) {
+        var key = r.fornecedor;
+        if (!groups[key]) groups[key] = {fornecedor: key, total: 0, count: 0, categories: {}, anos: {}};
+        groups[key].total += r.valor_pago;
+        groups[key].count++;
+        groups[key].categories[r.categoria] = true;
+        groups[key].anos[r.ano] = true;
+    });
+
+    var arr = Object.values(groups).sort(function(a, b) { return b.total - a.total; });
+
+    var html = '<thead><tr><th style="text-align:left">Fornecedor</th><th>Total (R$)</th><th>Qtd</th><th>Categorias</th><th>Anos</th><th>Status NF</th></tr></thead><tbody>';
+
+    var grandTotal = 0;
+    arr.forEach(function(g) {
+        grandTotal += g.total;
+        var cats = Object.keys(g.categories).sort().join(', ');
+        var anos = Object.keys(g.anos).sort().join(', ');
+        var reason = '';
+        var catKeys = Object.keys(g.categories);
+        var has216 = catKeys.some(function(c){return c.startsWith('2.16.');});
+        var has20394 = catKeys.some(function(c){return c === '2.03.94';});
+        var hasCPF = /\d{11}/.test(g.fornecedor);
+        if (has216) reason = 'Prestador PJ (2.16.xx)';
+        else if (has20394) reason = 'Prestador Servico (2.03.94)';
+        else if (hasCPF) reason = 'PF com CPF no nome';
+
+        html += '<tr>';
+        html += '<td style="text-align:left;font-weight:600;max-width:300px;overflow:hidden;text-overflow:ellipsis">' + g.fornecedor + '</td>';
+        html += '<td class="v-amber">' + fmt(g.total) + '</td>';
+        html += '<td>' + g.count + '</td>';
+        html += '<td style="font-size:10px;color:#94a3b8">' + cats + '</td>';
+        html += '<td>' + anos + '</td>';
+        html += '<td><span class="badge-nf">Verificar NF</span><br><span style="font-size:9px;color:#64748b">' + reason + '</span></td>';
+        html += '</tr>';
+    });
+
+    html += '<tr class="total-row"><td style="text-align:left">TOTAL (' + arr.length + ' fornecedores, ' + filtered.length + ' registros)</td>';
+    html += '<td>' + fmt(grandTotal) + '</td><td>' + filtered.length + '</td><td colspan="3"></td></tr>';
+    html += '</tbody>';
+    document.getElementById('semNFTable').innerHTML = html;
+}
+
+/* =============== AUDITORIA (FINDINGS) =============== */
+function renderAuditoria() {
+    var rows = dashData;
+    var filteredRows = getFilteredDash();
+
+    // Compute values for findings
+    var totalBma = 0;
+    (typeof bmaDesp !== 'undefined' ? bmaDesp : []).forEach(function(r) {
+        if (!currentYear || r.m.indexOf(currentYear) !== -1) totalBma += r.total;
+    });
+
+    var totalNfse = 0, totalNfe = 0, totalPend = 0;
+    filteredRows.forEach(function(r) {
+        totalNfse += r.nfse;
+        totalNfe += r.nfe;
+        totalPend += r.pend;
+    });
+
+    var ratio = totalNfe > 0 ? (totalNfse / totalNfe).toFixed(2) : 'N/A';
+    var issExcesso = totalNfse > totalNfe ? (totalNfse - totalNfe) * 0.02 : 0;
+
+    // Veiculos total from despesas
+    var veiculosTotal = 0;
+    var veiculosFornecedores = ['GRAND POINT', 'PORTO SEGURO', 'IPVA', 'VEICUL', 'AUTOMOVEL', 'DETRAN'];
+    if (typeof data !== 'undefined') {
+        data.forEach(function(r) {
+            if (currentYear && r.ano !== currentYear) return;
+            var upper = r.fornecedor.toUpperCase();
+            var isVeic = veiculosFornecedores.some(function(v) { return upper.indexOf(v) !== -1; });
+            if (isVeic) veiculosTotal += r.valor_pago;
+        });
+    }
+
+    // Professores inativos (from BMA data)
+    var profInativos = 0;
+    var profInativosCount = 0;
+    if (typeof bmaAll !== 'undefined') {
+        var profMap = {};
+        bmaAll.forEach(function(r) {
+            if (currentYear && r.ano !== currentYear) return;
+            if (r.categoria && (r.categoria.startsWith('2.03.') || r.categoria.startsWith('2.16.'))) {
+                if (!profMap[r.fornecedor]) profMap[r.fornecedor] = {total: 0, meses: {}};
+                profMap[r.fornecedor].total += r.valor_pago;
+                profMap[r.fornecedor].meses[r.mes] = true;
+            }
+        });
+        // Flag those with very few months (possibly inactive)
+        Object.keys(profMap).forEach(function(k) {
+            var mCount = Object.keys(profMap[k].meses).length;
+            if (mCount <= 2 && profMap[k].total > 0 && profMap[k].total < 20000) {
+                profInativos += profMap[k].total;
+                profInativosCount++;
+            }
+        });
+    }
+
+    var findings = [
+        {
+            id: 1,
+            title: 'NFs BMA nao lancadas no Omie Better',
+            severity: 'ALTA',
+            desc: 'A BMA Solucoes opera como empregadora dos colaboradores CLT e PJ da Better Education. Suas notas fiscais de repasse (folha, impostos, beneficios) nao estao registradas como contas a pagar no Omie da Better, gerando subavaliacao das despesas reais.',
+            impact: 'R$ ' + fmtK(totalBma).replace('R$ ','') + ' em notas da BMA nao registradas no Omie Better',
+            rec: 'Lancar todas as NFs mensais da BMA como Contas a Pagar no Omie Better. Estabelecer rotina mensal de conciliacao BMA x Better.'
+        },
+        {
+            id: 2,
+            title: 'Desequilibrio Fiscal 50/50 (NFS-e vs NF-e)',
+            severity: 'ALTA',
+            desc: 'A regra fiscal de venda de kits educacionais exige emissao balanceada de NFS-e (servico) e NF-e (produto). O ratio atual mostra desequilibrio sistematico favorecendo notas de servico, resultando em ISS pago indevidamente sobre valor que deveria ser tributado como produto.',
+            impact: 'Ratio NFS-e/NF-e = ' + ratio + 'x (deveria ser 1.0x). ISS pago a mais estimado: ' + fmtK(issExcesso),
+            rec: 'Corrigir split em novas vendas para garantir paridade 50/50. Avaliar credito de ISS sobre emissoes retroativas.'
+        },
+        {
+            id: 3,
+            title: 'Despesas de Veiculos como Operacional',
+            severity: 'MEDIA',
+            desc: 'Despesas com veiculos (leasing, seguro, IPVA, manutencao) estao classificadas como despesa operacional corrente. Pela norma contabil, veiculos em leasing/financiamento devem ser reconhecidos como ativo imobilizado com depreciacao.',
+            impact: fmtK(veiculosTotal) + ' em veiculos classificados como despesa operacional',
+            rec: 'Reclassificar veiculos para ativo imobilizado. Aplicar depreciacao linear de 5 anos. Isso melhora o EBITDA e reflete melhor a posicao patrimonial.'
+        },
+        {
+            id: 4,
+            title: 'Inadimplencia Vindi',
+            severity: 'MEDIA',
+            desc: 'Faturas pendentes na Vindi representam risco de credito. A falta de uma regua de cobranca automatica e aging analysis estruturado permite que valores vencidos permanecam sem acao por meses.',
+            impact: fmtK(totalPend) + ' em faturas pendentes Vindi no periodo',
+            rec: 'Implementar regua de cobranca automatica: lembrete D-3, cobranca D+1, D+7, D+15, D+30. Provisionar PDD para faturas > 90 dias.'
+        },
+        {
+            id: 5,
+            title: 'Professores Inativos Recebendo',
+            severity: 'MEDIA',
+            desc: 'Analise dos pagamentos BMA identifica colaboradores com poucos registros de pagamento e valores baixos, potencialmente indicando professores inativos ou em fase de desligamento que continuam gerando custo.',
+            impact: profInativosCount + ' colaboradores com perfil de inativos, totalizando ' + fmtK(profInativos),
+            rec: 'Cruzar lista de professores BMA com agendamentos Alumni para confirmar inatividade. Encerrar contratos de inativos confirmados.'
+        }
+    ];
+
+    var html = '';
+    findings.forEach(function(f) {
+        var sevClass = f.severity === 'ALTA' ? 'sev-alta' : (f.severity === 'MEDIA' ? 'sev-media' : 'sev-baixa');
+        var cardClass = f.severity === 'ALTA' ? 'sev-alta-card' : (f.severity === 'MEDIA' ? 'sev-media-card' : 'sev-baixa-card');
+        html += '<div class="finding ' + cardClass + '">';
+        html += '<h3><span class="badge-severity ' + sevClass + '">' + f.severity + '</span>Finding #' + f.id + ': ' + f.title + '</h3>';
+        html += '<div class="desc">' + f.desc + '</div>';
+        html += '<div class="impact">' + f.impact + '</div>';
+        html += '<div class="rec"><strong>Recomendacao:</strong> ' + f.rec + '</div>';
+        html += '</div>';
+    });
+
+    document.getElementById('findingsContainer').innerHTML = html;
+}
+
+/* =============== RENDER ALL =============== */
+function renderAll() {
+    renderSummary();
+    renderDRE();
+    renderBalancete();
+    renderSemNF();
+    renderAuditoria();
+}
+
+renderAll();
+</script>
+</body>
+</html>
