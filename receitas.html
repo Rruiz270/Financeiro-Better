@@ -167,7 +167,7 @@ tr.pendente{background:#fffbeb}tr.pendente:hover{background:#fef3c7}
 function fmt(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtK(v){return Math.abs(v)>=1e6?"R$ "+(v/1e6).toFixed(2)+"M":Math.abs(v)>=1e3?"R$ "+(v/1e3).toFixed(1)+"k":fmt(v)}
 
-// Build bill count per customer for badge logic
+// Build bill count per customer (Vindi installments, NOT purchases)
 var billCountByCustomer={};
 data.forEach(function(d){billCountByCustomer[d.cliente]=(billCountByCustomer[d.cliente]||0)+1});
 
@@ -200,18 +200,23 @@ function clearFilters(){["search","filterMin","filterMax"].forEach(function(id){
 function escHtml(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
 
 // Build renewal badge for a customer
+// Key distinction: compras = real purchases (spreadsheet), vindi_bills = monthly installments
 function renewalBadge(cliente){
-    var cnt=billCountByCustomer[cliente]||1;
     var cd=customerData[cliente];
     var badge="";
-    if(cnt>=6){
-        badge='<span class="badge-loyal">&#x2B50; Fiel ('+cnt+' compras)</span>';
-    } else if(cnt>=2){
-        badge='<span class="badge-renewal">&#x1F504; '+cnt+'&#170; compra</span>';
-    }
-    // If from spreadsheet marked as renewal
-    if(cd&&cd.renovacao&&cnt<2){
-        badge='<span class="badge-sheet-renewal">&#x1F504; Renova&ccedil;&atilde;o</span>';
+    if(cd){
+        // Real multi-purchase customer (2+ entries in spreadsheet)
+        if(cd.compras>=2){
+            badge='<span class="badge-renewal">&#x1F504; '+cd.compras+'&#170; compra</span>';
+        }
+        // Just recurrence (many Vindi installments but only 1 real purchase)
+        else if(cd.vindi_bills>=6&&cd.compras<2){
+            badge='<span class="badge-loyal" style="background:#6b7280">&#x1F4CB; '+cd.vindi_bills+' faturas</span>';
+        }
+        // Marked as renewal in spreadsheet but only 1 purchase
+        else if(cd.renovacao&&cd.compras<=1){
+            badge='<span class="badge-sheet-renewal">&#x1F504; Renova&ccedil;&atilde;o</span>';
+        }
     }
     return badge;
 }
@@ -283,24 +288,29 @@ function showCustomer(cliente){
     var html='<div class="modal-info-grid">';
     // Name
     html+='<div class="modal-info-item"><div class="lbl">Nome</div><div class="val">'+(cd?escHtml(cd.nome):escHtml(cliente))+'</div></div>';
-    // Email
+    // Email (from Vindi API or spreadsheet)
     html+='<div class="modal-info-item"><div class="lbl">Email</div><div class="val">'+(cd&&cd.email?escHtml(cd.email):cliente.indexOf("@")>-1?escHtml(cliente):"--")+'</div></div>';
     // CPF
     html+='<div class="modal-info-item"><div class="lbl">CPF/CNPJ</div><div class="val">'+(cd&&cd.cpf?escHtml(cd.cpf):"--")+'</div></div>';
-    // Total
-    html+='<div class="modal-info-item"><div class="lbl">Total Gasto</div><div class="val green">'+(cd?fmt(cd.total):fmt(0))+'</div></div>';
-    // Bills count
-    html+='<div class="modal-info-item"><div class="lbl">N&ordm; de Faturas</div><div class="val'+(cnt>=6?" purple":"")+'">'+cnt+'</div></div>';
+    // Celular
+    html+='<div class="modal-info-item"><div class="lbl">Celular</div><div class="val">'+(cd&&cd.celular?escHtml(cd.celular):"--")+'</div></div>';
+    // Total Vindi
+    html+='<div class="modal-info-item"><div class="lbl">Total Vindi</div><div class="val green">'+(cd?fmt(cd.vindi_total):fmt(0))+'</div></div>';
+    // Vindi bills (installments)
+    html+='<div class="modal-info-item"><div class="lbl">Faturas Vindi (parcelas)</div><div class="val">'+(cd?cd.vindi_bills:cnt)+'</div></div>';
+    // Real purchases from spreadsheet
+    html+='<div class="modal-info-item"><div class="lbl">Compras Reais (Planilha)</div><div class="val'+(cd&&cd.compras>=2?" green":"")+'\">'+(cd?cd.compras:0)+'</div></div>';
     // Product
     html+='<div class="modal-info-item"><div class="lbl">Produto</div><div class="val">'+(cd&&cd.produto?escHtml(cd.produto):"--")+'</div></div>';
-    // First purchase
-    html+='<div class="modal-info-item"><div class="lbl">Primeira Compra</div><div class="val">'+(cd?cd.first:"--")+'</div></div>';
-    // Last purchase
-    html+='<div class="modal-info-item"><div class="lbl">&Uacute;ltima Compra</div><div class="val">'+(cd?cd.last:"--")+'</div></div>';
+    // Nivel
+    html+='<div class="modal-info-item"><div class="lbl">N&iacute;vel</div><div class="val">'+(cd&&cd.nivel?escHtml(cd.nivel):"--")+'</div></div>';
+    // Source
+    html+='<div class="modal-info-item"><div class="lbl">Fonte</div><div class="val">'+(cd?escHtml(cd.fonte):"Vindi")+'</div></div>';
     // Renewal status
     var renewalLabel="--";
     if(cd){
-        if(cd.renovacao) renewalLabel='<span style="color:#059669;font-weight:700">&#x2705; Renova&ccedil;&atilde;o</span>';
+        if(cd.compras>=2) renewalLabel='<span style="color:#059669;font-weight:700">&#x2705; '+cd.compras+'&#170; compra real</span>';
+        else if(cd.renovacao) renewalLabel='<span style="color:#2563eb;font-weight:700">&#x1F504; Renova&ccedil;&atilde;o (planilha)</span>';
         else renewalLabel='<span style="color:#6b7280">Novo Aluno</span>';
     }
     html+='<div class="modal-info-item"><div class="lbl">Status Renova&ccedil;&atilde;o</div><div class="val">'+renewalLabel+'</div></div>';
@@ -313,11 +323,22 @@ function showCustomer(cliente){
     html+='<div class="modal-info-item"><div class="lbl">Cancelamento</div><div class="val">'+cancelLabel+'</div></div>';
     html+='</div>';
 
-    // Bills list
+    // Real purchases from spreadsheet
+    if(cd&&cd.compras_detail&&cd.compras_detail.length>0){
+        html+='<h3 style="font-size:13px;color:#374151;margin:16px 0 8px">&#x1F6D2; Compras Reais - Planilha ('+cd.compras_detail.length+')</h3>';
+        html+='<table class="modal-bills-table"><thead><tr><th>#</th><th>Data</th><th>Produto</th><th>N&iacute;vel</th><th>Valor</th><th>Tipo</th></tr></thead><tbody>';
+        for(var i=0;i<cd.compras_detail.length;i++){
+            var p=cd.compras_detail[i];
+            var pcolor=p.renovacao==="Renovação"||p.renovacao==="Renovacao"?"color:#059669;font-weight:600":"color:#374151";
+            html+='<tr><td>'+(i+1)+'</td><td>'+(p.data||"--")+'</td><td>'+escHtml(p.produto||"--")+'</td><td>'+escHtml(p.nivel||"--")+'</td><td style="color:#059669;font-weight:600">'+fmt(p.valor||0)+'</td><td style="'+pcolor+'">'+escHtml(p.renovacao||"--")+'</td></tr>';
+        }
+        html+='</tbody></table>';
+    }
+
+    // Vindi billing history
     if(bills.length>0){
-        html+='<h3 style="font-size:13px;color:#374151;margin:16px 0 8px">Hist&oacute;rico de Faturas ('+bills.length+')</h3>';
+        html+='<h3 style="font-size:13px;color:#374151;margin:16px 0 8px">&#x1F4CB; Faturas Vindi - Parcelas ('+bills.length+')</h3>';
         html+='<table class="modal-bills-table"><thead><tr><th>#</th><th>Data</th><th>M&ecirc;s</th><th>Valor</th><th>Status</th><th>Categoria</th></tr></thead><tbody>';
-        // Sort bills by date
         var sortedBills=bills.slice().sort(function(a,b){return a.data.localeCompare(b.data)});
         for(var i=0;i<sortedBills.length;i++){
             var b=sortedBills[i];
@@ -335,48 +356,70 @@ function showRenewals(){
     var stats=renewalStats;
     var html='';
 
-    // Stats cards row
+    // Stats cards row — CORRECT numbers from spreadsheet
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
-    html+='<div class="renewal-stat-card"><h4>Total de Clientes</h4><div class="big">'+stats.total_customers.toLocaleString("pt-BR")+'</div><div class="sub">clientes &uacute;nicos no Vindi</div></div>';
-    html+='<div class="renewal-stat-card purple"><h4>Clientes com 2+ Faturas</h4><div class="big">'+stats.multi_purchase.toLocaleString("pt-BR")+'</div><div class="sub">'+((stats.multi_purchase/stats.total_customers)*100).toFixed(1)+'% dos clientes</div></div>';
-    html+='<div class="renewal-stat-card blue"><h4>Renova&ccedil;&otilde;es (Planilha)</h4><div class="big">'+stats.renewals_from_spreadsheet+'</div><div class="sub">de 229 vendas na planilha</div></div>';
-    html+='<div class="renewal-stat-card"><h4>Valor Total Renova&ccedil;&otilde;es</h4><div class="big">'+fmtK(stats.total_renewal_value)+'</div><div class="sub">receita de renova&ccedil;&otilde;es</div></div>';
+    html+='<div class="renewal-stat-card"><h4>Total Vendas (Planilha)</h4><div class="big">'+stats.total_planilha.toLocaleString("pt-BR")+'</div><div class="sub">vendas reais na planilha de NF</div></div>';
+    html+='<div class="renewal-stat-card"><h4>CPFs &Uacute;nicos</h4><div class="big">'+stats.unique_cpfs.toLocaleString("pt-BR")+'</div><div class="sub">alunos &uacute;nicos por CPF</div></div>';
+    html+='<div class="renewal-stat-card purple"><h4>Renova&ccedil;&otilde;es Reais</h4><div class="big">'+stats.real_renewals.toLocaleString("pt-BR")+'</div><div class="sub">CPFs com 2+ compras na planilha</div></div>';
+    html+='<div class="renewal-stat-card"><h4>Valor Total Renova&ccedil;&otilde;es</h4><div class="big">'+fmtK(stats.total_renewal_value)+'</div><div class="sub">receita de CPFs com 2+ compras</div></div>';
+    html+='<div class="renewal-stat-card blue"><h4>Clientes Vindi</h4><div class="big">'+stats.total_customers.toLocaleString("pt-BR")+'</div><div class="sub">clientes &uacute;nicos no Vindi</div></div>';
+    html+='<div class="renewal-stat-card blue"><h4>Recorr&ecirc;ncia (2+ faturas)</h4><div class="big">'+stats.recurrence_customers.toLocaleString("pt-BR")+'</div><div class="sub">'+((stats.recurrence_customers/stats.total_customers)*100).toFixed(1)+'% com 2+ faturas Vindi (parcelas)</div></div>';
     html+='</div>';
 
-    // Top 20 customers by total
-    var custArr=Object.entries(customerData).map(function(e){return{nome:e[0],total:e[1].total,bills:e[1].bills,renovacao:e[1].renovacao}});
-    custArr.sort(function(a,b){return b.total-a.total});
+    // Top 20 customers by REAL purchase value (compras_detail sum)
+    var custArr=Object.entries(customerData).filter(function(e){return e[1].compras>=2}).map(function(e){
+        var purchaseTotal=0;
+        if(e[1].compras_detail){e[1].compras_detail.forEach(function(d){purchaseTotal+=d.valor||0})}
+        return{nome:e[0],purchaseTotal:purchaseTotal,compras:e[1].compras,vindi_bills:e[1].vindi_bills,renovacao:e[1].renovacao}
+    });
+    custArr.sort(function(a,b){return b.purchaseTotal-a.purchaseTotal});
 
-    html+='<h3 style="font-size:13px;color:#374151;margin-bottom:10px">Top 20 Clientes por Valor Total</h3>';
+    html+='<h3 style="font-size:13px;color:#374151;margin-bottom:10px">Top 20 Renova&ccedil;&otilde;es por Valor (compras reais)</h3>';
     html+='<div class="top-customers-list">';
     for(var i=0;i<Math.min(20,custArr.length);i++){
         var c=custArr[i];
-        var badge="";
-        if(c.bills>=6) badge='<span class="badge-loyal">&#x2B50; Fiel</span>';
-        else if(c.bills>=2) badge='<span class="badge-renewal">&#x1F504; '+c.bills+'x</span>';
-        if(c.renovacao) badge+='<span class="badge-sheet-renewal" style="margin-left:3px">Renov.</span>';
+        var badge='<span class="badge-renewal">&#x1F504; '+c.compras+' compras</span>';
+        if(c.vindi_bills>=2) badge+='<span class="badge-loyal" style="margin-left:3px;background:#6b7280">'+c.vindi_bills+' fat.</span>';
         html+='<div class="top-customer-row" onclick="closeModal(\'renewalModal\');showCustomer(\''+escHtml(c.nome.replace(/'/g,"\\'"))+'\')">';
         html+='<span class="rank">'+(i+1)+'.</span>';
         html+='<span class="name">'+escHtml(c.nome)+badge+'</span>';
-        html+='<span class="amount">'+fmtK(c.total)+'</span>';
-        html+='<span class="count">'+c.bills+' fat.</span>';
+        html+='<span class="amount">'+fmtK(c.purchaseTotal)+'</span>';
+        html+='<span class="count">'+c.compras+' compras</span>';
         html+='</div>';
     }
     html+='</div>';
 
-    // Distribution breakdown
-    var dist={1:0,2:0,3:0,4:0,5:0,"6+":0};
-    custArr.forEach(function(c){
-        if(c.bills>=6) dist["6+"]++;
-        else if(c.bills>=5) dist[5]++;
-        else if(c.bills>=4) dist[4]++;
-        else if(c.bills>=3) dist[3]++;
-        else if(c.bills>=2) dist[2]++;
-        else dist[1]++;
+    // Distribution by REAL purchases (compras from spreadsheet)
+    var distCompras={"0":0,"1":0,"2":0,"3":0,"4":0,"5+":0};
+    Object.values(customerData).forEach(function(c){
+        if(c.compras>=5) distCompras["5+"]++;
+        else if(c.compras>=4) distCompras["4"]++;
+        else if(c.compras>=3) distCompras["3"]++;
+        else if(c.compras>=2) distCompras["2"]++;
+        else if(c.compras>=1) distCompras["1"]++;
+        else distCompras["0"]++;
     });
-    html+='<h3 style="font-size:13px;color:#374151;margin:16px 0 10px">Distribui&ccedil;&atilde;o por N&ordm; de Faturas</h3>';
+    html+='<h3 style="font-size:13px;color:#374151;margin:16px 0 10px">Distribui&ccedil;&atilde;o por N&ordm; de Compras Reais</h3>';
     html+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">';
-    [["1 fatura",dist[1],"#6b7280"],["2 faturas",dist[2],"#059669"],["3 faturas",dist[3],"#059669"],["4 faturas",dist[4],"#059669"],["5 faturas",dist[5],"#7c3aed"],["6+ faturas",dist["6+"],"#7c3aed"]].forEach(function(item){
+    [["Vindi only",distCompras["0"],"#9ca3af"],["1 compra",distCompras["1"],"#6b7280"],["2 compras",distCompras["2"],"#059669"],["3 compras",distCompras["3"],"#059669"],["4 compras",distCompras["4"],"#7c3aed"],["5+ compras",distCompras["5+"],"#7c3aed"]].forEach(function(item){
+        html+='<div style="text-align:center;background:#f9fafb;border-radius:8px;padding:10px 4px"><div style="font-size:18px;font-weight:700;color:'+item[2]+'">'+item[1]+'</div><div style="font-size:9px;color:#6b7280;margin-top:2px">'+item[0]+'</div></div>';
+    });
+    html+='</div>';
+
+    // Also show Vindi installment distribution for reference
+    var distFat={1:0,2:0,3:0,4:0,5:0,"6+":0};
+    Object.values(customerData).forEach(function(c){
+        var b=c.vindi_bills||0;
+        if(b>=6) distFat["6+"]++;
+        else if(b>=5) distFat[5]++;
+        else if(b>=4) distFat[4]++;
+        else if(b>=3) distFat[3]++;
+        else if(b>=2) distFat[2]++;
+        else distFat[1]++;
+    });
+    html+='<h3 style="font-size:13px;color:#374151;margin:16px 0 10px">Distribui&ccedil;&atilde;o por N&ordm; de Faturas Vindi (parcelas)</h3>';
+    html+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">';
+    [["1 fatura",distFat[1],"#6b7280"],["2 faturas",distFat[2],"#6b7280"],["3 faturas",distFat[3],"#6b7280"],["4 faturas",distFat[4],"#6b7280"],["5 faturas",distFat[5],"#6b7280"],["6+ faturas",distFat["6+"],"#6b7280"]].forEach(function(item){
         html+='<div style="text-align:center;background:#f9fafb;border-radius:8px;padding:10px 4px"><div style="font-size:18px;font-weight:700;color:'+item[2]+'">'+item[1]+'</div><div style="font-size:9px;color:#6b7280;margin-top:2px">'+item[0]+'</div></div>';
     });
     html+='</div>';
