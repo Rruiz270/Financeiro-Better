@@ -9,42 +9,42 @@
 
 ```
                            FONTES DE DADOS (APIs)
-  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-  │  VINDI   │  │ PAGAR.ME │  │   OMIE   │  │ BMA OMIE │  │ PLANILHA │
-  │ Receitas │  │ Estornos │  │ Despesas │  │  Folha   │  │  Vendas  │
-  │ Clientes │  │Chargebck │  │  NFS-e   │  │Beneficios│  │  Alunos  │
-  │Pendentes │  │          │  │  NF-e    │  │ Impostos │  │          │
-  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘
-       │              │             │              │             │
-       └──────────────┴──────┬──────┴──────────────┘             │
-                             │                                   │
-                    ┌────────▼────────┐                ┌─────────▼────────┐
-                    │   update_data   │                │  import manual   │
-                    │    .py (cron)   │                │  (build_alunos)  │
-                    │  2x/dia + full  │                │                  │
-                    └────────┬────────┘                └─────────┬────────┘
-                             │                                   │
-                    ┌────────▼───────────────────────────────────▼┐
-                    │         NEON POSTGRESQL (financeiro)         │
-                    │                                             │
-                    │  vindi_bills (7.652)    omie_nfse (8.408)  │
-                    │  vindi_customers (3.473) omie_nfe (1.591)  │
-                    │  omie_contas_pagar (2.669)                  │
-                    │  omie_clientes (3.212)                      │
-                    │  bma_contas_pagar (1.232)                   │
-                    │  bma_contas_receber (100)                   │
-                    │  pagarme_transacoes (200)                   │
-                    │  vendas_planilha (3.328)                    │
-                    │  veiculos_flag (64)                         │
-                    │  dashboard_snapshot (33)                    │
-                    │  update_log                                 │
-                    └────────┬────────────────────────────────────┘
-                             │
-                    ┌────────▼────────┐
-                    │  Geracao de JS  │
-                    │  (SQL queries)  │
-                    └────────┬────────┘
-                             │
+  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+  │  VINDI   │  │ PAGAR.ME │  │   OMIE   │  │ BMA OMIE │  │ PLANILHA │  │ ALUMNI DB│
+  │ Receitas │  │ Estornos │  │ Despesas │  │  Folha   │  │  Vendas  │  │  Portal  │
+  │ Clientes │  │Chargebck │  │  NFS-e   │  │Beneficios│  │  Alunos  │  │  Aulas   │
+  │Pendentes │  │          │  │  NF-e    │  │ Impostos │  │          │  │ Bookings │
+  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘
+       │              │             │              │             │              │
+       └──────────────┴──────┬──────┴──────────────┘             │              │
+                             │                                   │              │
+                    ┌────────▼────────┐                ┌─────────▼────────┐     │
+                    │   update_data   │                │  import manual   │     │
+                    │    .py (cron)   │                │  (build_alunos)  │     │
+                    │  2x/dia + full  │                │                  │     │
+                    └────────┬────────┘                └─────────┬────────┘     │
+                             │                                   │              │
+                    ┌────────▼───────────────────────────────────▼┐             │
+                    │         NEON POSTGRESQL (financeiro)         │             │
+                    │                                             │             │
+                    │  vindi_bills (7.652)    omie_nfse (8.408)  │             │
+                    │  vindi_customers (3.473) omie_nfe (1.591)  │             │
+                    │  omie_contas_pagar (2.669)                  │             │
+                    │  omie_clientes (3.212)                      │             │
+                    │  bma_contas_pagar (1.232)                   │             │
+                    │  bma_contas_receber (100)                   │             │
+                    │  pagarme_transacoes (200)                   │             │
+                    │  vendas_planilha (3.328)                    │             │
+                    │  veiculos_flag (64)                         │             │
+                    │  dashboard_snapshot (33)                    │             │
+                    │  update_log                                 │             │
+                    └────────┬────────────────────────────────────┘             │
+                             │                                                  │
+                    ┌────────▼────────┐       ┌────────────────────────────────▼┐
+                    │  Geracao de JS  │       │    NEON POSTGRESQL (neondb)     │
+                    │  (SQL queries)  │       │    Alumni DB — 34 tabelas      │
+                    └────────┬────────┘       │    Prisma ORM (Portal)         │
+                             │                └────────────────────────────────┘
           ┌──────────────────┼──────────────────────┐
           │                  │                       │
    ┌──────▼──────┐   ┌──────▼──────┐        ┌──────▼──────┐
@@ -102,6 +102,37 @@
 - **Aba "Alunos"**: 3.569 registros com inicio/fim, nivel
 - **Aba "Cancelamentos"**: 1.928 registros
 - **Import**: via `build_alunos_v2.py` (manual)
+
+### 2.6 Alumni DB (Portal)
+- **Mesmo projeto Neon**, database `neondb` (sistema financeiro usa `financeiro`)
+- **Conexao**: `postgresql://neondb_owner:npg_Zu1zG2LPUovb@ep-snowy-shadow-a4hoyxtl-pooler.us-east-1.aws.neon.tech/neondb`
+- **ORM**: Prisma (schema gerenciado pelo Portal Alumni)
+- **Total**: 34 tabelas
+
+#### Tabelas com dados (6)
+| Tabela | Registros | Descricao |
+|--------|-----------|-----------|
+| User | 11 | Usuarios (TEACHER, STUDENT, ADMIN, ALUMNI) |
+| ContentSlide | 428 | Slides de conteudo |
+| Exercise | 412 | Exercicios |
+| MediaFile | 530 | Arquivos de midia |
+| Presentation | 108 | Apresentacoes |
+| Topic | 206 | Topicos |
+
+#### Tabelas operacionais vazias (28)
+- Booking (0), Availability (0), AttendanceLog (0), Alumni (0), StudentStats (0), ClassAnalytics (0), StudentAnalytics (0), Progress (0), entre outras
+- **User model**: id, email, password, name, role, level, studentId, isActive
+- **Booking model**: vincula teachers a students com datetime
+
+#### Estado atual
+- Conteudo educacional carregado (slides, exercicios, midia)
+- Tabelas operacionais (bookings, attendance, analytics) ainda vazias
+- Landing page menciona "14.956 aulas | 41.043 agendamentos | 2.830 alunos" mas esses dados NAO estao populados
+
+#### Futuro
+- Importacao planejada da base clean slate (3.060 alunos de alunos_data.js)
+- Quando populado, fornecera dados de aulas/bookings para analise de professores PJ no financeiro
+- Permitira cruzar pagamentos de professores (omie_contas_pagar cat 2.16.xx) com aulas efetivamente ministradas
 
 ---
 

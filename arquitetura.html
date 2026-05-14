@@ -113,6 +113,8 @@ body{
 .diagram-card.bma .dc-detail{color:#c084fc}
 .diagram-card.planilha{background:rgba(96,165,250,0.06);border-color:#60a5fa}
 .diagram-card.planilha .dc-detail{color:#60a5fa}
+.diagram-card.alumni{background:rgba(34,211,238,0.06);border-color:#22d3ee}
+.diagram-card.alumni .dc-detail{color:#22d3ee}
 
 .diagram-connector{
   display:flex;justify-content:center;padding:20px 0;position:relative;
@@ -227,6 +229,7 @@ body{
 .tc-source-pagarme .table-card-header{border-left:3px solid #f472b6}
 .tc-source-planilha .table-card-header{border-left:3px solid #60a5fa}
 .tc-source-system .table-card-header{border-left:3px solid #64748b}
+.tc-source-alumni .table-card-header{border-left:3px solid #22d3ee}
 
 /* ========== RULES ========== */
 .rules-grid{display:grid;grid-template-columns:1fr;gap:14px}
@@ -487,7 +490,7 @@ body{
       <p class="subtitle">Documento de referencia com todas as regras, fluxos, fontes de dados e logica de negocios</p>
       <div class="hero-stats">
         <div class="hero-stat"><div class="val">31.962</div><div class="lbl">Registros Totais</div></div>
-        <div class="hero-stat"><div class="val" style="color:#4ade80">5</div><div class="lbl">APIs Conectadas</div></div>
+        <div class="hero-stat"><div class="val" style="color:#4ade80">6</div><div class="lbl">Fontes de Dados</div></div>
         <div class="hero-stat"><div class="val" style="color:#60a5fa">13</div><div class="lbl">Tabelas Neon</div></div>
         <div class="hero-stat"><div class="val" style="color:#c084fc">13</div><div class="lbl">Paginas Dashboard</div></div>
         <div class="hero-stat"><div class="val" style="color:#fbbf24">11</div><div class="lbl">Arquivos JS</div></div>
@@ -535,6 +538,11 @@ body{
               <div class="dc-name">PLANILHA</div>
               <div class="dc-detail">Vendas, Alunos</div>
             </div>
+            <div class="diagram-card alumni">
+              <div class="dc-icon">&#127891;</div>
+              <div class="dc-name">ALUMNI DB</div>
+              <div class="dc-detail">Portal, Aulas, Bookings</div>
+            </div>
           </div>
 
           <!-- Connector: Sources to Processor -->
@@ -566,11 +574,16 @@ body{
           </div>
 
           <!-- Level 3: Database -->
-          <div class="diagram-level">
+          <div class="diagram-level" style="gap:20px">
             <div class="diagram-db">
               <div class="db-icon">&#128451;</div>
               <div class="db-name">NEON POSTGRESQL</div>
               <div class="db-sub">financeiro &mdash; 13 tabelas &mdash; 31.962 registros</div>
+            </div>
+            <div class="diagram-db" style="border-color:#22d3ee;background:linear-gradient(135deg,rgba(34,211,238,0.08),rgba(34,211,238,0.02))">
+              <div class="db-icon">&#127891;</div>
+              <div class="db-name">NEON POSTGRESQL</div>
+              <div class="db-sub" style="color:#22d3ee">neondb &mdash; 34 tabelas &mdash; Alumni Portal</div>
             </div>
           </div>
 
@@ -750,6 +763,31 @@ body{
             <div class="api-detail"><strong>Alunos:</strong> inicio/fim, nivel</div>
             <div style="margin-top:8px">
               <span class="badge-incr full">Import Manual</span>
+            </div>
+          </div>
+
+          <!-- Alumni DB -->
+          <div class="api-card" style="border-color:#22d3ee">
+            <div class="api-card-header">
+              <div class="api-icon">&#127891;</div>
+              <div>
+                <div class="api-name">Alumni DB (Portal)</div>
+                <div class="api-url">ep-snowy-shadow-a4hoyxtl-pooler.us-east-1.aws.neon.tech/neondb</div>
+              </div>
+            </div>
+            <div class="api-meta">
+              <span class="pill cyan">34 tabelas</span>
+              <span class="pill cyan">6 populadas</span>
+              <span class="pill amber">28 vazias</span>
+            </div>
+            <div class="api-detail"><strong>ORM:</strong> Prisma (schema gerenciado pelo Portal Alumni)</div>
+            <div class="api-detail"><strong>Database:</strong> neondb (mesmo projeto Neon, sem custo extra)</div>
+            <div class="api-detail"><strong>Populadas:</strong> User (11), ContentSlide (428), Exercise (412), MediaFile (530), Presentation (108), Topic (206)</div>
+            <div class="api-detail"><strong>Vazias:</strong> Booking, Availability, AttendanceLog, Alumni, StudentStats, ClassAnalytics, StudentAnalytics, Progress</div>
+            <div class="api-detail"><strong>User roles:</strong> TEACHER, STUDENT, ADMIN, ALUMNI</div>
+            <div class="api-detail"><strong>Futuro:</strong> importar 3.060 alunos de alunos_data.js; fornecer dados de aulas/bookings para analise de professores PJ</div>
+            <div style="margin-top:8px">
+              <span class="badge-incr" style="background:rgba(251,191,36,0.1);color:#fbbf24">Pendente Importacao</span>
             </div>
           </div>
 
@@ -1075,6 +1113,189 @@ body{
           </div>
 
         </div>
+
+        <!-- Alumni DB Schema -->
+        <div style="margin-top:24px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <span style="font-size:20px">&#127891;</span>
+            <h3 style="font-size:15px;font-weight:700;color:#22d3ee;margin:0">Alumni DB (neondb) &mdash; 34 tabelas Prisma</h3>
+            <span class="pill amber">Pendente Importacao</span>
+          </div>
+
+          <!-- Alumni connection info -->
+          <div class="domains-box" style="margin-bottom:16px;border-color:#22d3ee30">
+            <strong>Database:</strong> <code>neondb</code> &nbsp;|&nbsp;
+            <strong>Host:</strong> <code>ep-snowy-shadow-a4hoyxtl-pooler.us-east-1.aws.neon.tech</code> &nbsp;|&nbsp;
+            <strong>ORM:</strong> Prisma<br>
+            <span style="font-size:10px;color:#475569">Mesmo projeto Neon do financeiro (sem custo extra). Importacao de 3.060 alunos planejada a partir de alunos_data.js.</span>
+          </div>
+
+          <div class="schema-grid">
+
+            <!-- User -->
+            <div class="table-card tc-source-alumni" onclick="toggleCols(this)">
+              <div class="table-card-header">
+                <div class="tc-dot" style="background:#22d3ee"></div>
+                <div class="tc-name">User</div>
+                <div class="tc-count">11</div>
+              </div>
+              <div class="table-card-body">
+                <div class="tc-key">PK: id (UUID)</div>
+                <div class="tc-desc">Usuarios do portal (TEACHER, STUDENT, ADMIN, ALUMNI)</div>
+              </div>
+              <div class="table-card-cols">
+                <div>id (UUID, PK)</div>
+                <div>email (VARCHAR)</div>
+                <div>password (VARCHAR)</div>
+                <div>name (VARCHAR)</div>
+                <div>role (ENUM: TEACHER, STUDENT, ADMIN, ALUMNI)</div>
+                <div>level (VARCHAR)</div>
+                <div>studentId (VARCHAR)</div>
+                <div>isActive (BOOLEAN)</div>
+              </div>
+              <div class="expand-hint">Clique para ver colunas</div>
+            </div>
+
+            <!-- ContentSlide -->
+            <div class="table-card tc-source-alumni" onclick="toggleCols(this)">
+              <div class="table-card-header">
+                <div class="tc-dot" style="background:#22d3ee"></div>
+                <div class="tc-name">ContentSlide</div>
+                <div class="tc-count">428</div>
+              </div>
+              <div class="table-card-body">
+                <div class="tc-key">PK: id</div>
+                <div class="tc-desc">Slides de conteudo educacional</div>
+              </div>
+              <div class="table-card-cols">
+                <div>id (UUID, PK)</div>
+                <div>presentationId (FK)</div>
+                <div>content (TEXT)</div>
+                <div>order (INT)</div>
+              </div>
+              <div class="expand-hint">Clique para ver colunas</div>
+            </div>
+
+            <!-- Exercise -->
+            <div class="table-card tc-source-alumni" onclick="toggleCols(this)">
+              <div class="table-card-header">
+                <div class="tc-dot" style="background:#22d3ee"></div>
+                <div class="tc-name">Exercise</div>
+                <div class="tc-count">412</div>
+              </div>
+              <div class="table-card-body">
+                <div class="tc-key">PK: id</div>
+                <div class="tc-desc">Exercicios</div>
+              </div>
+              <div class="table-card-cols">
+                <div>id (UUID, PK)</div>
+                <div>topicId (FK)</div>
+                <div>question (TEXT)</div>
+                <div>type (ENUM)</div>
+              </div>
+              <div class="expand-hint">Clique para ver colunas</div>
+            </div>
+
+            <!-- MediaFile -->
+            <div class="table-card tc-source-alumni" onclick="toggleCols(this)">
+              <div class="table-card-header">
+                <div class="tc-dot" style="background:#22d3ee"></div>
+                <div class="tc-name">MediaFile</div>
+                <div class="tc-count">530</div>
+              </div>
+              <div class="table-card-body">
+                <div class="tc-key">PK: id</div>
+                <div class="tc-desc">Arquivos de midia (audio, video, imagem)</div>
+              </div>
+              <div class="table-card-cols">
+                <div>id (UUID, PK)</div>
+                <div>url (VARCHAR)</div>
+                <div>type (ENUM)</div>
+                <div>size (INT)</div>
+              </div>
+              <div class="expand-hint">Clique para ver colunas</div>
+            </div>
+
+            <!-- Presentation -->
+            <div class="table-card tc-source-alumni" onclick="toggleCols(this)">
+              <div class="table-card-header">
+                <div class="tc-dot" style="background:#22d3ee"></div>
+                <div class="tc-name">Presentation</div>
+                <div class="tc-count">108</div>
+              </div>
+              <div class="table-card-body">
+                <div class="tc-key">PK: id</div>
+                <div class="tc-desc">Apresentacoes</div>
+              </div>
+              <div class="table-card-cols">
+                <div>id (UUID, PK)</div>
+                <div>topicId (FK)</div>
+                <div>title (VARCHAR)</div>
+              </div>
+              <div class="expand-hint">Clique para ver colunas</div>
+            </div>
+
+            <!-- Topic -->
+            <div class="table-card tc-source-alumni" onclick="toggleCols(this)">
+              <div class="table-card-header">
+                <div class="tc-dot" style="background:#22d3ee"></div>
+                <div class="tc-name">Topic</div>
+                <div class="tc-count">206</div>
+              </div>
+              <div class="table-card-body">
+                <div class="tc-key">PK: id</div>
+                <div class="tc-desc">Topicos do curriculo</div>
+              </div>
+              <div class="table-card-cols">
+                <div>id (UUID, PK)</div>
+                <div>name (VARCHAR)</div>
+                <div>level (VARCHAR)</div>
+              </div>
+              <div class="expand-hint">Clique para ver colunas</div>
+            </div>
+
+            <!-- Booking (empty) -->
+            <div class="table-card tc-source-alumni" onclick="toggleCols(this)" style="opacity:0.6">
+              <div class="table-card-header">
+                <div class="tc-dot" style="background:#22d3ee"></div>
+                <div class="tc-name">Booking</div>
+                <div class="tc-count" style="background:rgba(251,191,36,0.1);color:#fbbf24">0</div>
+              </div>
+              <div class="table-card-body">
+                <div class="tc-key">PK: id | FK: teacherId, studentId</div>
+                <div class="tc-desc">Agendamentos aula (vazio &mdash; pendente importacao)</div>
+              </div>
+              <div class="table-card-cols">
+                <div>id (UUID, PK)</div>
+                <div>teacherId (FK &rarr; User)</div>
+                <div>studentId (FK &rarr; User)</div>
+                <div>datetime (TIMESTAMP)</div>
+                <div>status (ENUM)</div>
+              </div>
+              <div class="expand-hint">Clique para ver colunas</div>
+            </div>
+
+            <!-- Alumni (empty) -->
+            <div class="table-card tc-source-alumni" onclick="toggleCols(this)" style="opacity:0.6">
+              <div class="table-card-header">
+                <div class="tc-dot" style="background:#22d3ee"></div>
+                <div class="tc-name">Alumni</div>
+                <div class="tc-count" style="background:rgba(251,191,36,0.1);color:#fbbf24">0</div>
+              </div>
+              <div class="table-card-body">
+                <div class="tc-key">PK: id</div>
+                <div class="tc-desc">Registro de ex-alunos (vazio &mdash; pendente importacao)</div>
+              </div>
+              <div class="table-card-cols">
+                <div>id (UUID, PK)</div>
+                <div>userId (FK &rarr; User)</div>
+              </div>
+              <div class="expand-hint">Clique para ver colunas</div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </section>
 
