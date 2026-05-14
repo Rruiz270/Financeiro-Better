@@ -51,6 +51,16 @@ def safe_str(v):
     if v is None: return ""
     return str(v).strip()
 
+def date_to_br(v):
+    """Convert DB date (datetime.date or ISO string) to DD/MM/YYYY."""
+    if v is None: return ""
+    if hasattr(v, 'strftime'):
+        return v.strftime('%d/%m/%Y')
+    s = str(v).strip()
+    if len(s) == 10 and s[4] == '-':
+        return f"{s[8:10]}/{s[5:7]}/{s[:4]}"
+    return s
+
 def get_conn():
     conn = psycopg2.connect(DB_URL, keepalives=1, keepalives_idle=30,
                             keepalives_interval=10, keepalives_count=5)
@@ -414,7 +424,7 @@ def update_omie_nfse():
             safe_str(info.get('dDtFat', '')),
             safe_float(cab.get('nValorTotal')),
             safe_str(info.get('cEtapa', '')),
-            safe_str(info.get('cCancelada', '')),
+            info.get('cCancelada', '') == 'S',
         ))
 
     n = batch_upsert('omie_nfse',
@@ -441,7 +451,7 @@ def update_omie_nfe():
             safe_str(inf.get('dInc', '')),
             safe_str(cab.get('data_previsao', '')),
             safe_float(tot.get('valor_total_pedido')),
-            safe_str(inf.get('cancelado', '')),
+            inf.get('cancelado', '') == 'S',
         ))
 
     n = batch_upsert('omie_nfe',
@@ -540,12 +550,12 @@ def generate_js_files():
     desp_list = []
     for row in cur.fetchall():
         omie_id, forn, d_em, d_vc, d_pr, val, sit, cat = row
-        primary = safe_str(d_pr) or safe_str(d_vc) or safe_str(d_em)
+        primary = date_to_br(d_pr) or date_to_br(d_vc) or date_to_br(d_em)
         _, mes = parse_br_date(primary)
         y, _ = parse_br_date(primary)
         desp_list.append({
-            'data': primary, 'data_emissao': safe_str(d_em),
-            'data_vencimento': safe_str(d_vc), 'data_previsao': safe_str(d_pr),
+            'data': primary, 'data_emissao': date_to_br(d_em),
+            'data_vencimento': date_to_br(d_vc), 'data_previsao': date_to_br(d_pr),
             'mes': mes or '', 'ano': y or '',
             'fornecedor': safe_str(forn), 'categoria': safe_str(cat),
             'valor_pago': round(safe_float(val), 2),
@@ -562,15 +572,15 @@ def generate_js_files():
     """)
     for row in cur.fetchall():
         omie_id, forn, d_em, d_vc, d_pr, val, sit, cat, proj = row
-        primary = safe_str(d_pr) or safe_str(d_vc) or safe_str(d_em)
+        primary = date_to_br(d_pr) or date_to_br(d_vc) or date_to_br(d_em)
         _, mes = parse_br_date(primary)
         y, _ = parse_br_date(primary)
         sit_clean = safe_str(sit)
         sit_map = {'LIQUIDADO': 'PAGO', 'ATRASADO': 'ATRASADO', 'A VENCER': 'A VENCER'}
         sit_clean = sit_map.get(sit_clean, sit_clean)
         desp_list.append({
-            'data': primary, 'data_emissao': safe_str(d_em),
-            'data_vencimento': safe_str(d_vc), 'data_previsao': safe_str(d_pr),
+            'data': primary, 'data_emissao': date_to_br(d_em),
+            'data_vencimento': date_to_br(d_vc), 'data_previsao': date_to_br(d_pr),
             'mes': mes or '', 'ano': y or '',
             'fornecedor': safe_str(forn), 'categoria': safe_str(cat),
             'valor_pago': round(safe_float(val), 2),
@@ -595,15 +605,15 @@ def generate_js_files():
     bma_desp_monthly = defaultdict(lambda: {'total': 0.0, 'count': 0})
     for row in cur.fetchall():
         forn, d_em, d_vc, d_pr, val, sit, cat, proj = row
-        primary = safe_str(d_pr) or safe_str(d_vc) or safe_str(d_em)
+        primary = date_to_br(d_pr) or date_to_br(d_vc) or date_to_br(d_em)
         y, mes = parse_br_date(primary)
         if not y: continue
         sit_map = {'LIQUIDADO': 'PAGO', 'ATRASADO': 'ATRASADO', 'A VENCER': 'A VENCER'}
         sit_clean = sit_map.get(safe_str(sit), safe_str(sit))
         v = safe_float(val)
         bma_all.append({
-            'data': primary, 'data_emissao': safe_str(d_em),
-            'data_vencimento': safe_str(d_vc), 'data_previsao': safe_str(d_pr),
+            'data': primary, 'data_emissao': date_to_br(d_em),
+            'data_vencimento': date_to_br(d_vc), 'data_previsao': date_to_br(d_pr),
             'mes': mes, 'ano': y, 'fornecedor': safe_str(forn),
             'categoria': safe_str(cat), 'valor_pago': round(v, 2),
             'situacao': sit_clean, 'projeto': safe_str(proj), 'fonte': 'BMA',
@@ -625,7 +635,7 @@ def generate_js_files():
     bma_rec_monthly = defaultdict(lambda: {'total': 0.0, 'count': 0})
     for row in cur.fetchall():
         cli, d_em, d_vc, val, sit, cat = row
-        primary = safe_str(d_vc) or safe_str(d_em)
+        primary = date_to_br(d_vc) or date_to_br(d_em)
         y, mes = parse_br_date(primary)
         if not y or not mes: continue
         v = safe_float(val)
@@ -653,12 +663,12 @@ def generate_js_files():
     veic_list = []
     for row in cur.fetchall():
         forn, d_em, d_vc, d_pr, val, sit, cat = row
-        primary = safe_str(d_pr) or safe_str(d_vc) or safe_str(d_em)
+        primary = date_to_br(d_pr) or date_to_br(d_vc) or date_to_br(d_em)
         _, mes = parse_br_date(primary)
         y, _ = parse_br_date(primary)
         veic_list.append({
-            'data': primary, 'data_emissao': safe_str(d_em),
-            'data_vencimento': safe_str(d_vc), 'data_previsao': safe_str(d_pr),
+            'data': primary, 'data_emissao': date_to_br(d_em),
+            'data_vencimento': date_to_br(d_vc), 'data_previsao': date_to_br(d_pr),
             'mes': mes or '', 'ano': y or '',
             'fornecedor': safe_str(forn), 'categoria': safe_str(cat),
             'valor_pago': round(safe_float(val), 2),
@@ -696,7 +706,7 @@ def generate_js_files():
     """)
     despesas = defaultdict(lambda: {'total': 0, 'count': 0})
     for row in cur.fetchall():
-        dt = safe_str(row[0])
+        dt = date_to_br(row[0])
         _, m = parse_br_date(dt)
         if m:
             despesas[m]['total'] += safe_float(row[1])
@@ -708,7 +718,7 @@ def generate_js_files():
     """)
     estornos = defaultdict(lambda: {'total': 0, 'count': 0})
     for row in cur.fetchall():
-        dt = safe_str(row[0])
+        dt = date_to_br(row[0])
         if dt and len(dt) >= 7:
             mm = dt[5:7] if '-' in dt else ''
             y = dt[:4] if '-' in dt else ''
@@ -723,7 +733,7 @@ def generate_js_files():
     """)
     chargebacks = defaultdict(lambda: {'total': 0, 'count': 0})
     for row in cur.fetchall():
-        dt = safe_str(row[0])
+        dt = date_to_br(row[0])
         if dt and len(dt) >= 7:
             mm = dt[5:7] if '-' in dt else ''
             y = dt[:4] if '-' in dt else ''
@@ -735,11 +745,11 @@ def generate_js_files():
     # NFS-e by month
     cur.execute("""
         SELECT data_faturamento, valor_total FROM omie_nfse
-        WHERE cancelada != 'S' OR cancelada IS NULL
+        WHERE NOT cancelada
     """)
     nfse_m = defaultdict(lambda: {'total': 0, 'count': 0})
     for row in cur.fetchall():
-        dt = safe_str(row[0])
+        dt = date_to_br(row[0])
         _, m = parse_br_date(dt)
         if m:
             nfse_m[m]['total'] += safe_float(row[1])
@@ -748,11 +758,11 @@ def generate_js_files():
     # NF-e by month
     cur.execute("""
         SELECT data_inclusao, valor_total FROM omie_nfe
-        WHERE cancelado != 'S' OR cancelado IS NULL
+        WHERE NOT cancelado
     """)
     nfe_m = defaultdict(lambda: {'total': 0, 'count': 0})
     for row in cur.fetchall():
-        dt = safe_str(row[0])
+        dt = date_to_br(row[0])
         _, m = parse_br_date(dt)
         if m:
             nfe_m[m]['total'] += safe_float(row[1])
