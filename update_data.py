@@ -172,10 +172,13 @@ def omie_call(endpoint, method, params, app_key=None, app_secret=None):
 
 
 def omie_paginate(endpoint, method, list_key, per_page=50, delay=3,
-                  app_key=None, app_secret=None):
+                  app_key=None, app_secret=None, recent_pages=None):
+    """Paginate an Omie API endpoint.
+    If recent_pages is set, only fetch the last N pages (for incremental runs)."""
     if app_key is None: app_key = OMIE_APP_KEY
     if app_secret is None: app_secret = OMIE_APP_SECRET
     results, page, total_pages = [], 1, None
+    skipped_to = False
     while True:
         for attempt in range(3):
             try:
@@ -194,7 +197,15 @@ def omie_paginate(endpoint, method, list_key, per_page=50, delay=3,
             continue
         if total_pages is None:
             total_pages = d.get('total_de_paginas', 0)
-            print(f"  {method}: {d.get('total_de_registros',0)} records, {total_pages} pages")
+            total_records = d.get('total_de_registros', 0)
+            print(f"  {method}: {total_records} records, {total_pages} pages")
+            # Skip to last N pages if recent_pages is set
+            if recent_pages and total_pages > recent_pages and not skipped_to:
+                page = total_pages - recent_pages + 1
+                skipped_to = True
+                print(f"  -> Skipping to page {page}/{total_pages} (last {recent_pages} pages)")
+                time.sleep(delay)
+                continue
         results.extend(d.get(list_key, []))
         if page % 10 == 0: print(f"    Page {page}/{total_pages}")
         if page >= total_pages: break
@@ -264,9 +275,28 @@ def update_vindi_bills():
     return n, 0
 
 
+def _cache_fresh(fonte, max_age_days=7):
+    """Return True if fonte was updated less than max_age_days ago."""
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT MAX(timestamp) FROM update_log WHERE fonte=%s", (fonte,))
+        last = cur.fetchone()[0]
+        cur.close()
+        conn.close()
+        if last and (datetime.now() - last).days < max_age_days:
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def update_vindi_customers():
-    """Fetch all Vindi customers and upsert."""
+    """Fetch all Vindi customers and upsert. Skipped if cache <7 days old."""
     print("[2/8] Vindi customers ...")
+    if _cache_fresh('vindi_customers', 7):
+        print("  Cache fresh (<7 days), skipping")
+        return 0, 0
     customers = vindi_get("customers")
     print(f"  Fetched {len(customers)} customers")
     rows = []
@@ -286,36 +316,51 @@ def update_vindi_customers():
     update_cols = ['name', 'email', 'registry_code', 'phone']
     n = batch_upsert('vindi_customers', cols, rows, 'vindi_id', update_cols)
     print(f"  Upserted {n} vindi_customers")
+    log_update('vindi_customers', n, 0, n, 0)
     return n, 0
 
 
 def update_omie_contas_pagar():
-    """Fetch Omie Better contas a pagar and clients, upsert all."""
+    """Fetch Omie Better contas a pagar and clients, upsert all.
+    Clients: skipped if cache <7 days old.
+    CP: only last 10 pages (recent records where status changes happen)."""
     print("[3/8] Omie Better contas a pagar + clients ...")
 
-    # Clients
-    print("  Fetching Better clients ...")
-    clients_raw = omie_paginate("geral/clientes/", "ListarClientes", "clientes_cadastro",
-                                delay=3)
+    # Clients — skip if recently fetched
     cli_map = {}
-    cli_rows = []
-    for c in clients_raw:
-        cod = c.get('codigo_cliente_omie')
-        nome_f = safe_str(c.get('nome_fantasia', ''))
-        razao = safe_str(c.get('razao_social', ''))
-        cnpj = safe_str(c.get('cnpj_cpf', ''))
-        cli_map[cod] = nome_f or razao or str(cod)
-        cli_rows.append((cod, nome_f, razao, cnpj, 'Better'))
+    if _cache_fresh('omie_clientes', 7):
+        print("  Better clients cache fresh (<7 days), loading from DB ...")
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT omie_cod, nome_fantasia, razao_social FROM omie_clientes WHERE fonte='Better'")
+        for row in cur.fetchall():
+            cli_map[row[0]] = safe_str(row[1]) or safe_str(row[2]) or str(row[0])
+        cur.close()
+        conn.close()
+        print(f"  Loaded {len(cli_map)} Better clients from DB cache")
+    else:
+        print("  Fetching Better clients ...")
+        clients_raw = omie_paginate("geral/clientes/", "ListarClientes", "clientes_cadastro",
+                                    delay=3)
+        cli_rows = []
+        for c in clients_raw:
+            cod = c.get('codigo_cliente_omie')
+            nome_f = safe_str(c.get('nome_fantasia', ''))
+            razao = safe_str(c.get('razao_social', ''))
+            cnpj = safe_str(c.get('cnpj_cpf', ''))
+            cli_map[cod] = nome_f or razao or str(cod)
+            cli_rows.append((cod, nome_f, razao, cnpj, 'Better'))
 
-    n_cli = batch_upsert('omie_clientes', ['omie_cod', 'nome_fantasia', 'razao_social', 'cnpj_cpf', 'fonte'],
-                         cli_rows, 'omie_cod',
-                         ['nome_fantasia', 'razao_social', 'cnpj_cpf'])
-    print(f"  Upserted {n_cli} Better clients")
+        n_cli = batch_upsert('omie_clientes', ['omie_cod', 'nome_fantasia', 'razao_social', 'cnpj_cpf', 'fonte'],
+                             cli_rows, 'omie_cod',
+                             ['nome_fantasia', 'razao_social', 'cnpj_cpf'])
+        print(f"  Upserted {n_cli} Better clients")
+        log_update('omie_clientes', n_cli, 0, n_cli, 0)
 
-    # Contas a pagar (full fetch with upsert — status changes from A VENCER to PAGO)
-    print("  Fetching Better contas a pagar ...")
+    # Contas a pagar — only last 10 pages (status changes happen on recent records)
+    print("  Fetching Better contas a pagar (last 10 pages) ...")
     cp_raw = omie_paginate("financas/contapagar/", "ListarContasPagar", "conta_pagar_cadastro",
-                           delay=3)
+                           delay=3, recent_pages=10)
     rows = []
     for c in cp_raw:
         forn_cod = c.get('codigo_cliente_fornecedor')
@@ -339,32 +384,47 @@ def update_omie_contas_pagar():
 
 
 def update_bma():
-    """Fetch BMA contas a pagar + receber + clients, upsert all."""
+    """Fetch BMA contas a pagar + receber + clients, upsert all.
+    Clients: skipped if cache <7 days old.
+    CP: only last 5 pages."""
     print("[4/8] BMA data ...")
 
-    # BMA clients
-    print("  Fetching BMA clients ...")
-    bma_clients = omie_paginate("geral/clientes/", "ListarClientes", "clientes_cadastro",
-                                delay=3, app_key=BMA_KEY, app_secret=BMA_SECRET)
+    # BMA clients — skip if recently fetched
     bma_cli_map = {}
-    cli_rows = []
-    for c in bma_clients:
-        cod = c.get('codigo_cliente_omie')
-        nome_f = safe_str(c.get('nome_fantasia', ''))
-        razao = safe_str(c.get('razao_social', ''))
-        cnpj = safe_str(c.get('cnpj_cpf', ''))
-        bma_cli_map[cod] = razao or nome_f or str(cod)
-        cli_rows.append((cod, nome_f, razao, cnpj, 'BMA'))
+    if _cache_fresh('bma_clientes', 7):
+        print("  BMA clients cache fresh (<7 days), loading from DB ...")
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT omie_cod, razao_social, nome_fantasia FROM omie_clientes WHERE fonte='BMA'")
+        for row in cur.fetchall():
+            bma_cli_map[row[0]] = safe_str(row[1]) or safe_str(row[2]) or str(row[0])
+        cur.close()
+        conn.close()
+        print(f"  Loaded {len(bma_cli_map)} BMA clients from DB cache")
+    else:
+        print("  Fetching BMA clients ...")
+        bma_clients = omie_paginate("geral/clientes/", "ListarClientes", "clientes_cadastro",
+                                    delay=3, app_key=BMA_KEY, app_secret=BMA_SECRET)
+        cli_rows = []
+        for c in bma_clients:
+            cod = c.get('codigo_cliente_omie')
+            nome_f = safe_str(c.get('nome_fantasia', ''))
+            razao = safe_str(c.get('razao_social', ''))
+            cnpj = safe_str(c.get('cnpj_cpf', ''))
+            bma_cli_map[cod] = razao or nome_f or str(cod)
+            cli_rows.append((cod, nome_f, razao, cnpj, 'BMA'))
 
-    n_cli = batch_upsert('omie_clientes', ['omie_cod', 'nome_fantasia', 'razao_social', 'cnpj_cpf', 'fonte'],
-                         cli_rows, 'omie_cod',
-                         ['nome_fantasia', 'razao_social'])
-    print(f"  Upserted {n_cli} BMA clients")
+        n_cli = batch_upsert('omie_clientes', ['omie_cod', 'nome_fantasia', 'razao_social', 'cnpj_cpf', 'fonte'],
+                             cli_rows, 'omie_cod',
+                             ['nome_fantasia', 'razao_social'])
+        print(f"  Upserted {n_cli} BMA clients")
+        log_update('bma_clientes', n_cli, 0, n_cli, 0)
 
-    # BMA contas a pagar
-    print("  Fetching BMA contas a pagar ...")
+    # BMA contas a pagar — only last 5 pages
+    print("  Fetching BMA contas a pagar (last 5 pages) ...")
     bma_cp = omie_paginate("financas/contapagar/", "ListarContasPagar", "conta_pagar_cadastro",
-                           delay=3, app_key=BMA_KEY, app_secret=BMA_SECRET)
+                           delay=3, app_key=BMA_KEY, app_secret=BMA_SECRET,
+                           recent_pages=5)
     cp_rows = []
     for c in bma_cp:
         forn_cod = c.get('codigo_cliente_fornecedor')
@@ -412,9 +472,10 @@ def update_bma():
 
 
 def update_omie_nfse():
-    """Fetch NFS-e (OS) from Omie and upsert."""
-    print("[5/8] Omie NFS-e ...")
-    os_raw = omie_paginate("servicos/os/", "ListarOS", "osCadastro", delay=3)
+    """Fetch NFS-e (OS) from Omie and upsert. Only last 5 pages."""
+    print("[5/8] Omie NFS-e (last 5 pages) ...")
+    os_raw = omie_paginate("servicos/os/", "ListarOS", "osCadastro", delay=3,
+                           recent_pages=5)
     rows = []
     for o in os_raw:
         cab = o.get('Cabecalho', {})
@@ -436,11 +497,11 @@ def update_omie_nfse():
 
 
 def update_omie_nfe():
-    """Fetch NF-e (Pedidos) from Omie and upsert."""
-    print("[6/8] Omie NF-e ...")
+    """Fetch NF-e (Pedidos) from Omie and upsert. Only last 3 pages."""
+    print("[6/8] Omie NF-e (last 3 pages) ...")
     time.sleep(10)  # cool-down before hitting Omie again
     pedidos = omie_paginate("produtos/pedido/", "ListarPedidos", "pedido_venda_produto",
-                            delay=3)
+                            delay=3, recent_pages=3)
     rows = []
     for p in pedidos:
         cab = p.get('cabecalho', {})
@@ -962,18 +1023,36 @@ def main():
     start_time = time.time()
     print(f"=== Better Data Update (Neon) — {datetime.now().strftime('%Y-%m-%d %H:%M')} ===\n")
 
+    def _elapsed():
+        return f"[{time.time()-start_time:.0f}s elapsed]"
+
     # ── Phase 1: Incremental fetch + upsert ──────────────────────
     stats = {}
+
     stats['vindi_bills'] = update_vindi_bills()
+    print(f"  {_elapsed()}")
+
     stats['vindi_customers'] = update_vindi_customers()
+    print(f"  {_elapsed()}")
+
     stats['omie_cp'] = update_omie_contas_pagar()
+    print(f"  {_elapsed()}")
+
     stats['bma'] = update_bma()
+    print(f"  {_elapsed()}")
+
     stats['nfse'] = update_omie_nfse()
+    print(f"  {_elapsed()}")
+
     stats['nfe'] = update_omie_nfe()
+    print(f"  {_elapsed()}")
+
     stats['pagarme'] = update_pagarme()
+    print(f"  {_elapsed()}")
 
     # ── Phase 2: Generate JS files from DB ───────────────────────
     n_months, n_rec, n_desp = generate_js_files()
+    print(f"  {_elapsed()}")
 
     elapsed = time.time() - start_time
     print(f"\n=== Done in {elapsed:.0f}s — Dashboard: {n_months} months, "
