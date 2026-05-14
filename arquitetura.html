@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Better Education — Arquitetura do Ecossistema Financeiro</title>
+<style>
+/* ========== RESET & BASE ========== */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:#0f172a;color:#94a3b8;min-height:100vh;line-height:1.6;
+}
+
+/* ========== SIDEBAR ========== */
+.sidebar{
+  position:fixed;left:0;top:0;width:260px;height:100vh;background:#1e293b;
+  border-right:1px solid #334155;padding:20px 0;overflow-y:auto;z-index:100;
+  transition:transform 0.3s ease;
+}
+.sidebar-logo{padding:0 20px 20px;border-bottom:1px solid #334155;margin-bottom:12px}
+.sidebar-logo h2{font-size:14px;color:#f8fafc;line-height:1.3}
+.sidebar-logo p{font-size:10px;color:#64748b;margin-top:4px}
+.sidebar nav a{
+  display:flex;align-items:center;gap:10px;padding:10px 20px;
+  font-size:12px;color:#94a3b8;text-decoration:none;transition:all 0.2s;
+  border-left:3px solid transparent;
+}
+.sidebar nav a:hover{color:#f8fafc;background:#0f172a}
+.sidebar nav a.active{color:#60a5fa;border-left-color:#60a5fa;background:rgba(96,165,250,0.05)}
+.sidebar nav a .nav-icon{font-size:16px;width:20px;text-align:center}
+
+.sidebar-toggle{
+  display:none;position:fixed;top:14px;left:14px;z-index:200;
+  background:#1e293b;border:1px solid #334155;border-radius:8px;
+  color:#f8fafc;font-size:20px;width:40px;height:40px;cursor:pointer;
+  align-items:center;justify-content:center;
+}
+
+/* ========== MAIN CONTENT ========== */
+.main{margin-left:260px;padding:0;min-height:100vh}
+
+/* ========== HERO ========== */
+.hero{
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);
+  border-bottom:1px solid #334155;padding:60px 40px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+  background:conic-gradient(from 0deg,transparent,rgba(96,165,250,0.03),transparent,rgba(74,222,128,0.03),transparent);
+  animation:heroRotate 20s linear infinite;
+}
+@keyframes heroRotate{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.hero-content{position:relative;z-index:1}
+.hero h1{
+  font-size:32px;font-weight:800;
+  background:linear-gradient(135deg,#60a5fa,#4ade80,#c084fc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:gradientShift 6s ease infinite;
+  background-size:200% 200%;
+}
+@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero .subtitle{font-size:14px;color:#94a3b8;margin-top:8px}
+.hero-stats{display:flex;justify-content:center;gap:40px;margin-top:28px;flex-wrap:wrap}
+.hero-stat{text-align:center}
+.hero-stat .val{font-size:28px;font-weight:800;color:#f8fafc}
+.hero-stat .lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.hero .version-badge{
+  display:inline-block;margin-top:20px;padding:4px 16px;border-radius:20px;
+  background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);
+  font-size:11px;color:#60a5fa;
+}
+
+/* ========== SECTION BASE ========== */
+.content-wrapper{max-width:1100px;margin:0 auto;padding:30px 30px 60px}
+.section{margin-bottom:48px}
+.section-header{
+  display:flex;align-items:center;gap:12px;cursor:pointer;
+  padding:16px 20px;background:#1e293b;border:1px solid #334155;
+  border-radius:12px;margin-bottom:16px;transition:all 0.2s;user-select:none;
+}
+.section-header:hover{border-color:#475569}
+.section-header .sec-icon{font-size:22px}
+.section-header h2{font-size:18px;color:#f8fafc;flex:1}
+.section-header .chevron{
+  font-size:18px;color:#64748b;transition:transform 0.3s;
+}
+.section-header.collapsed .chevron{transform:rotate(-90deg)}
+.section-body{transition:max-height 0.4s ease,opacity 0.3s ease;overflow:hidden}
+.section-body.hidden{max-height:0!important;opacity:0;margin:0}
+
+/* ========== DIAGRAM ========== */
+.diagram-wrapper{padding:30px;background:#0f172a;border:1px solid #334155;border-radius:12px;overflow-x:auto}
+.diagram-level{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;position:relative}
+.diagram-level.sources{margin-bottom:0}
+.diagram-card{
+  min-width:140px;max-width:180px;padding:14px;border-radius:10px;text-align:center;
+  border:1px solid;position:relative;flex:1;
+}
+.diagram-card .dc-icon{font-size:24px;margin-bottom:6px}
+.diagram-card .dc-name{font-size:12px;font-weight:700;color:#f8fafc}
+.diagram-card .dc-detail{font-size:10px;margin-top:4px}
+
+.diagram-card.vindi{background:rgba(74,222,128,0.06);border-color:#4ade80}
+.diagram-card.vindi .dc-detail{color:#4ade80}
+.diagram-card.pagarme{background:rgba(244,114,182,0.06);border-color:#f472b6}
+.diagram-card.pagarme .dc-detail{color:#f472b6}
+.diagram-card.omie{background:rgba(248,113,113,0.06);border-color:#f87171}
+.diagram-card.omie .dc-detail{color:#f87171}
+.diagram-card.bma{background:rgba(192,132,252,0.06);border-color:#c084fc}
+.diagram-card.bma .dc-detail{color:#c084fc}
+.diagram-card.planilha{background:rgba(96,165,250,0.06);border-color:#60a5fa}
+.diagram-card.planilha .dc-detail{color:#60a5fa}
+
+.diagram-connector{
+  display:flex;justify-content:center;padding:20px 0;position:relative;
+}
+.connector-line{
+  width:2px;height:40px;background:#334155;position:relative;
+}
+.connector-line::after{
+  content:'';position:absolute;bottom:-4px;left:-4px;width:10px;height:10px;
+  border-radius:50%;background:#60a5fa;animation:pulseDot 2s ease infinite;
+}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.6)}}
+
+.connector-fan{
+  display:flex;justify-content:center;position:relative;padding:20px 0;
+}
+.connector-fan-lines{
+  display:flex;gap:60px;position:relative;
+}
+.connector-fan-lines::before{
+  content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:#334155;
+}
+.fan-drop{width:2px;height:30px;background:#334155;position:relative}
+.fan-drop::after{
+  content:'';position:absolute;bottom:-4px;left:-4px;width:10px;height:10px;
+  border-radius:50%;background:#60a5fa;animation:pulseDot 2s ease infinite;
+}
+
+.diagram-process{
+  display:inline-flex;align-items:center;gap:10px;padding:14px 28px;
+  background:#1e293b;border:1px solid #334155;border-radius:10px;
+  margin:0 auto;
+}
+.diagram-process .dp-icon{font-size:20px}
+.diagram-process .dp-name{font-size:13px;font-weight:700;color:#f8fafc}
+.diagram-process .dp-sub{font-size:10px;color:#64748b}
+
+.diagram-db{
+  display:inline-block;padding:20px 40px;background:linear-gradient(135deg,rgba(96,165,250,0.08),rgba(96,165,250,0.02));
+  border:2px solid #60a5fa;border-radius:16px;text-align:center;
+}
+.diagram-db .db-icon{font-size:28px}
+.diagram-db .db-name{font-size:14px;font-weight:800;color:#f8fafc;margin-top:4px}
+.diagram-db .db-sub{font-size:11px;color:#60a5fa}
+
+.diagram-deploy{
+  display:inline-flex;align-items:center;gap:10px;padding:14px 24px;
+  background:rgba(74,222,128,0.06);border:1px solid #4ade80;border-radius:10px;
+}
+.diagram-deploy .dd-icon{font-size:18px}
+.diagram-deploy .dd-name{font-size:12px;font-weight:700;color:#f8fafc}
+.diagram-deploy .dd-sub{font-size:10px;color:#4ade80}
+
+/* ========== API CARDS ========== */
+.api-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.api-card{
+  background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;
+  transition:transform 0.2s;
+}
+.api-card:hover{transform:translateY(-2px)}
+.api-card-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.api-card-header .api-icon{font-size:28px}
+.api-card-header .api-name{font-size:16px;font-weight:700;color:#f8fafc}
+.api-card-header .api-url{font-size:10px;font-family:monospace;color:#64748b;margin-top:2px;word-break:break-all}
+.api-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pill{
+  display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:600;
+  background:rgba(96,165,250,0.1);color:#60a5fa;
+}
+.pill.green{background:rgba(74,222,128,0.1);color:#4ade80}
+.pill.pink{background:rgba(244,114,182,0.1);color:#f472b6}
+.pill.red{background:rgba(248,113,113,0.1);color:#f87171}
+.pill.purple{background:rgba(192,132,252,0.1);color:#c084fc}
+.pill.amber{background:rgba(251,191,36,0.1);color:#fbbf24}
+.pill.orange{background:rgba(249,115,22,0.1);color:#f97316}
+.pill.cyan{background:rgba(34,211,238,0.1);color:#22d3ee}
+.api-detail{font-size:11px;margin-bottom:6px}
+.api-detail strong{color:#cbd5e1}
+
+.badge-incr{
+  display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:700;
+}
+.badge-incr.incremental{background:rgba(74,222,128,0.1);color:#4ade80}
+.badge-incr.full{background:rgba(248,113,113,0.1);color:#f87171}
+.badge-incr.cache{background:rgba(251,191,36,0.1);color:#fbbf24}
+
+/* ========== DB SCHEMA ========== */
+.schema-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.table-card{
+  background:#1e293b;border-radius:12px;overflow:hidden;
+  border:1px solid #334155;transition:transform 0.2s;cursor:pointer;
+}
+.table-card:hover{transform:translateY(-2px)}
+.table-card-header{padding:14px 16px;border-bottom:1px solid #334155;display:flex;align-items:center;gap:10px}
+.table-card-header .tc-dot{width:10px;height:10px;border-radius:50%}
+.table-card-header .tc-name{font-size:13px;font-weight:700;color:#f8fafc;font-family:monospace;flex:1}
+.table-card-header .tc-count{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(96,165,250,0.1);color:#60a5fa}
+.table-card-body{padding:12px 16px;font-size:11px}
+.table-card-body .tc-key{font-family:monospace;color:#fbbf24;font-size:10px;margin-bottom:4px}
+.table-card-body .tc-desc{color:#94a3b8}
+.table-card-cols{
+  max-height:0;overflow:hidden;transition:max-height 0.3s ease;
+  padding:0 16px;font-size:10px;font-family:monospace;color:#64748b;
+}
+.table-card-cols.expanded{max-height:300px;padding:8px 16px 12px}
+.table-card-cols div{padding:2px 0;border-bottom:1px solid #0f172a}
+.expand-hint{font-size:9px;color:#475569;text-align:center;padding:4px;cursor:pointer}
+
+.tc-source-vindi .table-card-header{border-left:3px solid #4ade80}
+.tc-source-omie .table-card-header{border-left:3px solid #f87171}
+.tc-source-bma .table-card-header{border-left:3px solid #c084fc}
+.tc-source-pagarme .table-card-header{border-left:3px solid #f472b6}
+.tc-source-planilha .table-card-header{border-left:3px solid #60a5fa}
+.tc-source-system .table-card-header{border-left:3px solid #64748b}
+
+/* ========== RULES ========== */
+.rules-grid{display:grid;grid-template-columns:1fr;gap:14px}
+.rule-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px}
+.rule-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.rule-number{
+  font-size:11px;font-weight:800;color:#0f172a;padding:4px 10px;border-radius:8px;
+  min-width:36px;text-align:center;
+}
+.rule-number.green{background:#4ade80}
+.rule-number.red{background:#f87171}
+.rule-number.purple{background:#c084fc}
+.rule-number.amber{background:#fbbf24}
+.rule-number.blue{background:#60a5fa}
+.rule-number.cyan{background:#22d3ee}
+.rule-number.orange{background:#f97316}
+.rule-title{font-size:15px;font-weight:700;color:#f8fafc;flex:1}
+.rule-badge{
+  font-size:9px;font-weight:700;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px;
+}
+.rule-badge.fiscal{background:rgba(249,115,22,0.15);color:#f97316}
+.rule-badge.operacional{background:rgba(96,165,250,0.15);color:#60a5fa}
+.rule-badge.contabil{background:rgba(74,222,128,0.15);color:#4ade80}
+.rule-body{font-size:12px;line-height:1.7}
+.rule-body p{margin-bottom:8px}
+.rule-body code{
+  font-family:'SF Mono',Menlo,monospace;font-size:11px;
+  background:#0f172a;padding:2px 6px;border-radius:4px;color:#fbbf24;
+}
+.rule-body .code-block{
+  display:block;background:#0f172a;border:1px solid #334155;border-radius:8px;
+  padding:12px 16px;margin:8px 0;font-family:'SF Mono',Menlo,monospace;
+  font-size:11px;white-space:pre-wrap;color:#e2e8f0;overflow-x:auto;
+}
+.rule-tables{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.rule-tables .rt{
+  font-size:9px;padding:2px 8px;border-radius:8px;background:rgba(96,165,250,0.08);
+  color:#60a5fa;font-family:monospace;
+}
+
+/* ========== CRON ========== */
+.cron-timeline{
+  display:flex;align-items:flex-end;gap:4px;padding:20px;background:#0f172a;
+  border:1px solid #334155;border-radius:12px;margin-bottom:16px;min-height:120px;
+  overflow-x:auto;
+}
+.cron-day{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:24px}
+.cron-day .day-num{font-size:8px;color:#475569}
+.cron-dot{border-radius:50%;transition:all 0.2s}
+.cron-dot.small{width:8px;height:8px;background:#334155}
+.cron-dot.daily{width:12px;height:12px;background:#60a5fa;box-shadow:0 0 8px rgba(96,165,250,0.3)}
+.cron-dot.full{width:20px;height:20px;background:#4ade80;box-shadow:0 0 12px rgba(74,222,128,0.4)}
+
+.cron-table{width:100%;border-collapse:collapse;font-size:12px}
+.cron-table th{
+  text-align:left;padding:10px 14px;background:#0f172a;color:#64748b;font-size:10px;
+  text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #334155;
+}
+.cron-table td{padding:10px 14px;border-bottom:1px solid #1e293b}
+.cron-table tr:hover td{background:rgba(96,165,250,0.03)}
+.duration-badge{
+  display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;
+}
+.duration-badge.fast{background:rgba(74,222,128,0.1);color:#4ade80}
+.duration-badge.slow{background:rgba(251,191,36,0.1);color:#fbbf24}
+
+/* ========== PAGES MAP ========== */
+.pages-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.page-card{
+  background:#1e293b;border-radius:10px;padding:14px;border:2px solid #334155;
+  transition:transform 0.2s;
+}
+.page-card:hover{transform:translateY(-2px)}
+.page-card .pc-name{font-size:13px;font-weight:700;color:#f8fafc;margin-bottom:4px}
+.page-card .pc-url{font-size:9px;font-family:monospace;color:#475569;margin-bottom:6px}
+.page-card .pc-desc{font-size:10px;color:#94a3b8;line-height:1.4}
+
+.page-card.accent-blue{border-color:#3b82f6}
+.page-card.accent-green{border-color:#4ade80}
+.page-card.accent-red{border-color:#f87171}
+.page-card.accent-purple{border-color:#c084fc}
+.page-card.accent-orange{border-color:#f97316}
+.page-card.accent-teal{border-color:#14b8a6}
+.page-card.accent-cyan{border-color:#22d3ee}
+.page-card.accent-amber{border-color:#fbbf24}
+.page-card.accent-darkblue{border-color:#1e3a5f}
+
+.domains-box{
+  background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px 20px;
+  margin-top:16px;font-size:12px;
+}
+.domains-box strong{color:#f8fafc}
+.domains-box code{font-family:monospace;color:#60a5fa;font-size:11px}
+
+/* ========== JS PIPELINE ========== */
+.pipeline-table{width:100%;border-collapse:collapse;font-size:12px}
+.pipeline-table th{
+  text-align:left;padding:10px 14px;background:#0f172a;color:#64748b;font-size:10px;
+  text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #334155;
+}
+.pipeline-table td{padding:10px 14px;border-bottom:1px solid #1e293b}
+.pipeline-table tr:hover td{background:rgba(96,165,250,0.03)}
+.pipeline-table td:first-child{font-family:monospace;color:#fbbf24;font-weight:600}
+.pipeline-flow{
+  display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:16px;
+  background:#0f172a;border:1px solid #334155;border-radius:10px;flex-wrap:wrap;
+  justify-content:center;
+}
+.pf-step{
+  padding:8px 16px;border-radius:8px;font-size:11px;font-weight:700;color:#f8fafc;
+  text-align:center;
+}
+.pf-arrow{font-size:16px;color:#334155}
+.pf-step.db{background:rgba(96,165,250,0.15);border:1px solid #60a5fa}
+.pf-step.sql{background:rgba(251,191,36,0.15);border:1px solid #fbbf24}
+.pf-step.js{background:rgba(74,222,128,0.15);border:1px solid #4ade80}
+.pf-step.html{background:rgba(244,114,182,0.15);border:1px solid #f472b6}
+
+/* ========== AUDIT FINDINGS ========== */
+.findings-grid{display:grid;grid-template-columns:1fr;gap:14px}
+.finding-card{
+  background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;
+  display:flex;gap:20px;align-items:flex-start;
+}
+.finding-number{
+  font-size:20px;font-weight:900;color:#0f172a;width:40px;height:40px;
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.finding-number.alta{background:#f87171}
+.finding-number.media{background:#fbbf24}
+.finding-content{flex:1}
+.finding-title{font-size:14px;font-weight:700;color:#f8fafc;margin-bottom:6px}
+.finding-severity{
+  display:inline-block;font-size:9px;font-weight:800;padding:2px 10px;
+  border-radius:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;
+}
+.finding-severity.alta{background:rgba(248,113,113,0.15);color:#f87171}
+.finding-severity.media{background:rgba(251,191,36,0.15);color:#fbbf24}
+.finding-value{font-size:22px;font-weight:800;color:#f8fafc;margin-bottom:8px}
+.finding-desc{font-size:12px;margin-bottom:8px;line-height:1.6}
+.finding-rec{font-size:11px;color:#4ade80;padding:8px 12px;background:rgba(74,222,128,0.06);border-radius:8px}
+
+/* ========== FORMULAS ========== */
+.formulas-block{
+  background:#0f172a;border:1px solid #334155;border-radius:12px;padding:24px;
+  font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px;
+  line-height:2;overflow-x:auto;
+}
+.fm-keyword{color:#c084fc;font-weight:700}
+.fm-func{color:#fbbf24}
+.fm-table{color:#60a5fa}
+.fm-op{color:#f87171}
+.fm-comment{color:#475569;font-style:italic}
+
+/* ========== SECRETS TABLE ========== */
+.secrets-table{width:100%;border-collapse:collapse;font-size:12px}
+.secrets-table th{
+  text-align:left;padding:10px 14px;background:#0f172a;color:#64748b;font-size:10px;
+  text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #334155;
+}
+.secrets-table td{padding:10px 14px;border-bottom:1px solid #1e293b}
+.secrets-table tr:hover td{background:rgba(96,165,250,0.03)}
+.secret-name{font-family:monospace;color:#fbbf24;font-weight:600}
+.secret-value{color:#475569;font-family:monospace;font-size:10px}
+
+/* ========== SCRIPTS TABLE ========== */
+.scripts-table{width:100%;border-collapse:collapse;font-size:12px}
+.scripts-table th{
+  text-align:left;padding:10px 14px;background:#0f172a;color:#64748b;font-size:10px;
+  text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #334155;
+}
+.scripts-table td{padding:10px 14px;border-bottom:1px solid #1e293b}
+.scripts-table tr:hover td{background:rgba(96,165,250,0.03)}
+.scripts-table td:first-child{font-family:monospace;color:#4ade80;font-weight:600}
+
+/* ========== FOOTER ========== */
+.page-footer{
+  text-align:center;padding:40px 20px;color:#475569;font-size:10px;
+  border-top:1px solid #334155;margin-top:40px;
+}
+
+/* ========== FADE-IN ON SCROLL ========== */
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity 0.6s ease,transform 0.6s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+
+/* ========== BACK TO TOP ========== */
+.back-top{
+  position:fixed;bottom:24px;right:24px;width:44px;height:44px;
+  background:#1e293b;border:1px solid #334155;border-radius:50%;
+  color:#94a3b8;font-size:18px;cursor:pointer;display:none;
+  align-items:center;justify-content:center;z-index:90;transition:all 0.2s;
+}
+.back-top:hover{background:#334155;color:#f8fafc}
+.back-top.show{display:flex}
+
+/* ========== RESPONSIVE ========== */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-toggle{display:flex}
+  .main{margin-left:0}
+  .hero h1{font-size:22px}
+  .hero-stats{gap:20px}
+  .hero-stat .val{font-size:20px}
+  .content-wrapper{padding:20px 16px 40px}
+  .api-cards{grid-template-columns:1fr}
+  .schema-grid{grid-template-columns:1fr}
+  .pages-grid{grid-template-columns:1fr 1fr}
+  .finding-card{flex-direction:column}
+}
+@media(max-width:500px){
+  .pages-grid{grid-template-columns:1fr}
+  .diagram-level{flex-direction:column;align-items:center}
+  .diagram-card{max-width:100%;min-width:auto}
+}
+
+/* ========== SORTABLE TABLE ========== */
+.sortable th{cursor:pointer;user-select:none}
+.sortable th:hover{color:#f8fafc}
+.sort-arrow{margin-left:4px;font-size:8px}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR TOGGLE (mobile) -->
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">&#9776;</button>
+
+<!-- SIDEBAR NAVIGATION -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h2>Better Education</h2>
+    <p>Arquitetura Financeira</p>
+  </div>
+  <nav>
+    <a href="#hero" class="active"><span class="nav-icon">&#127968;</span> Visao Geral</a>
+    <a href="#architecture"><span class="nav-icon">&#128736;</span> Arquitetura</a>
+    <a href="#datasources"><span class="nav-icon">&#128268;</span> Fontes de Dados</a>
+    <a href="#database"><span class="nav-icon">&#128451;</span> Banco de Dados</a>
+    <a href="#rules"><span class="nav-icon">&#128220;</span> Regras de Negocio</a>
+    <a href="#cron"><span class="nav-icon">&#128339;</span> Cron & Schedule</a>
+    <a href="#pages"><span class="nav-icon">&#128506;</span> Paginas Dashboard</a>
+    <a href="#pipeline"><span class="nav-icon">&#128196;</span> Arquivos JS</a>
+    <a href="#scripts"><span class="nav-icon">&#128295;</span> Scripts</a>
+    <a href="#audit"><span class="nav-icon">&#128269;</span> Auditoria</a>
+    <a href="#formulas"><span class="nav-icon">&#129518;</span> Formulas</a>
+    <a href="#secrets"><span class="nav-icon">&#128272;</span> Secrets & Config</a>
+  </nav>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="hero">
+    <div class="hero-content">
+      <h1>Better Education — Arquitetura do Ecossistema Financeiro</h1>
+      <p class="subtitle">Documento de referencia com todas as regras, fluxos, fontes de dados e logica de negocios</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="val">31.962</div><div class="lbl">Registros Totais</div></div>
+        <div class="hero-stat"><div class="val" style="color:#4ade80">5</div><div class="lbl">APIs Conectadas</div></div>
+        <div class="hero-stat"><div class="val" style="color:#60a5fa">13</div><div class="lbl">Tabelas Neon</div></div>
+        <div class="hero-stat"><div class="val" style="color:#c084fc">13</div><div class="lbl">Paginas Dashboard</div></div>
+        <div class="hero-stat"><div class="val" style="color:#fbbf24">11</div><div class="lbl">Arquivos JS</div></div>
+      </div>
+      <span class="version-badge">Atualizado: Maio 2026 &mdash; v2.0</span>
+    </div>
+  </section>
+
+  <div class="content-wrapper">
+
+    <!-- ============ 1. SYSTEM ARCHITECTURE DIAGRAM ============ -->
+    <section class="section fade-in" id="architecture">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128736;</span>
+        <h2>Arquitetura do Sistema</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="diagram-wrapper">
+
+          <!-- Level 1: API Sources -->
+          <div class="diagram-level sources">
+            <div class="diagram-card vindi">
+              <div class="dc-icon">&#128176;</div>
+              <div class="dc-name">VINDI</div>
+              <div class="dc-detail">Receitas, Clientes, Pendentes</div>
+            </div>
+            <div class="diagram-card pagarme">
+              <div class="dc-icon">&#128179;</div>
+              <div class="dc-name">PAGAR.ME</div>
+              <div class="dc-detail">Estornos, Chargebacks</div>
+            </div>
+            <div class="diagram-card omie">
+              <div class="dc-icon">&#128203;</div>
+              <div class="dc-name">OMIE</div>
+              <div class="dc-detail">Despesas, NFS-e, NF-e</div>
+            </div>
+            <div class="diagram-card bma">
+              <div class="dc-icon">&#128188;</div>
+              <div class="dc-name">BMA OMIE</div>
+              <div class="dc-detail">Folha, Beneficios, Impostos</div>
+            </div>
+            <div class="diagram-card planilha">
+              <div class="dc-icon">&#128202;</div>
+              <div class="dc-name">PLANILHA</div>
+              <div class="dc-detail">Vendas, Alunos</div>
+            </div>
+          </div>
+
+          <!-- Connector: Sources to Processor -->
+          <div class="diagram-connector">
+            <div class="connector-line"></div>
+          </div>
+
+          <!-- Level 2: Processors -->
+          <div class="diagram-level" style="gap:40px">
+            <div class="diagram-process">
+              <div class="dp-icon">&#9881;</div>
+              <div>
+                <div class="dp-name">update_data.py</div>
+                <div class="dp-sub">Cron 2x/dia + Full Refresh</div>
+              </div>
+            </div>
+            <div class="diagram-process">
+              <div class="dp-icon">&#128196;</div>
+              <div>
+                <div class="dp-name">import manual</div>
+                <div class="dp-sub">build_alunos_v2.py</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connector: Processor to DB -->
+          <div class="diagram-connector">
+            <div class="connector-line"></div>
+          </div>
+
+          <!-- Level 3: Database -->
+          <div class="diagram-level">
+            <div class="diagram-db">
+              <div class="db-icon">&#128451;</div>
+              <div class="db-name">NEON POSTGRESQL</div>
+              <div class="db-sub">financeiro &mdash; 13 tabelas &mdash; 31.962 registros</div>
+            </div>
+          </div>
+
+          <!-- Connector: DB to JS Generation -->
+          <div class="diagram-connector">
+            <div class="connector-line"></div>
+          </div>
+
+          <!-- Level 4: JS Generation -->
+          <div class="diagram-level">
+            <div class="diagram-process">
+              <div class="dp-icon">&#128187;</div>
+              <div>
+                <div class="dp-name">Geracao de JS</div>
+                <div class="dp-sub">SQL queries &rarr; 11 arquivos .js</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connector: JS to Deploys -->
+          <div class="connector-fan">
+            <div class="connector-fan-lines">
+              <div class="fan-drop"></div>
+              <div class="fan-drop"></div>
+              <div class="fan-drop"></div>
+            </div>
+          </div>
+
+          <!-- Level 5: Deployments -->
+          <div class="diagram-level">
+            <div class="diagram-deploy">
+              <div class="dd-icon">&#9650;</div>
+              <div>
+                <div class="dd-name">Vercel Financeiro-Better</div>
+                <div class="dd-sub">financeiro-better.vercel.app</div>
+              </div>
+            </div>
+            <div class="diagram-deploy">
+              <div class="dd-icon">&#9650;</div>
+              <div>
+                <div class="dd-name">Vercel LP-i10</div>
+                <div class="dd-sub">institutoi10.com.br/better-financeiro</div>
+              </div>
+            </div>
+            <div class="diagram-deploy" style="border-color:#64748b">
+              <div class="dd-icon">&#128736;</div>
+              <div>
+                <div class="dd-name">GitHub Actions</div>
+                <div class="dd-sub">Cron automatico</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 2. DATA SOURCES & APIs ============ -->
+    <section class="section fade-in" id="datasources">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128268;</span>
+        <h2>Fontes de Dados & APIs</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="api-cards">
+
+          <!-- Vindi -->
+          <div class="api-card" style="border-color:#4ade80">
+            <div class="api-card-header">
+              <div class="api-icon">&#128176;</div>
+              <div>
+                <div class="api-name">Vindi</div>
+                <div class="api-url">https://app.vindi.com.br/api/v1/</div>
+              </div>
+            </div>
+            <div class="api-meta">
+              <span class="pill green">bills?status:paid</span>
+              <span class="pill green">bills?status:pending</span>
+              <span class="pill green">customers</span>
+            </div>
+            <div class="api-detail"><strong>Auth:</strong> Basic (base64 de KEY:)</div>
+            <div class="api-detail"><strong>Registros:</strong> ~7.652 bills, 3.473 customers</div>
+            <div class="api-detail"><strong>Incremental:</strong> busca bills com created_at &ge; max_date_no_banco</div>
+            <div class="api-detail"><strong>Cache:</strong> customers skip se &lt;7 dias</div>
+            <div style="margin-top:8px">
+              <span class="badge-incr incremental">Incremental</span>
+              <span class="badge-incr cache">Cache 7d (customers)</span>
+            </div>
+          </div>
+
+          <!-- Pagar.me -->
+          <div class="api-card" style="border-color:#f472b6">
+            <div class="api-card-header">
+              <div class="api-icon">&#128179;</div>
+              <div>
+                <div class="api-name">Pagar.me</div>
+                <div class="api-url">https://api.pagar.me/1/transactions</div>
+              </div>
+            </div>
+            <div class="api-meta">
+              <span class="pill pink">refunded (183)</span>
+              <span class="pill pink">chargedback (17)</span>
+            </div>
+            <div class="api-detail"><strong>Auth:</strong> api_key no query string</div>
+            <div class="api-detail"><strong>Registros:</strong> 200 (183 refunded + 17 chargedback)</div>
+            <div class="api-detail"><strong>Dedup:</strong> 1 duplicata removida (Susy Santos R$240 &mdash; mesmo CPF+valor em refund e chargeback)</div>
+            <div style="margin-top:8px">
+              <span class="badge-incr full">Full (volume baixo)</span>
+            </div>
+          </div>
+
+          <!-- Omie Better -->
+          <div class="api-card" style="border-color:#f87171">
+            <div class="api-card-header">
+              <div class="api-icon">&#128203;</div>
+              <div>
+                <div class="api-name">Omie Better</div>
+                <div class="api-url">https://app.omie.com.br/api/v1/</div>
+              </div>
+            </div>
+            <div class="api-meta">
+              <span class="pill red">financas/contapagar/</span>
+              <span class="pill red">geral/clientes/</span>
+              <span class="pill red">servicos/os/</span>
+              <span class="pill red">produtos/pedido/</span>
+            </div>
+            <div class="api-detail"><strong>Auth:</strong> app_key (4340156993172) + app_secret no body JSON</div>
+            <div class="api-detail"><strong>Endpoints:</strong> ListarContasPagar, ListarClientes, ListarOS (NFS-e), ListarPedidos (NF-e)</div>
+            <div class="api-detail"><strong>Incremental:</strong> ultimas N paginas (CP=10, NFS-e=5, NF-e=3)</div>
+            <div class="api-detail"><strong>Cache:</strong> clientes skip se &lt;7 dias</div>
+            <div class="api-detail"><strong>Rate limit:</strong> delay 3s entre paginas, retry 3x com backoff</div>
+            <div style="margin-top:8px">
+              <span class="badge-incr incremental">Incremental</span>
+              <span class="badge-incr cache">Cache 7d (clientes)</span>
+            </div>
+          </div>
+
+          <!-- BMA Omie -->
+          <div class="api-card" style="border-color:#c084fc">
+            <div class="api-card-header">
+              <div class="api-icon">&#128188;</div>
+              <div>
+                <div class="api-name">BMA Omie</div>
+                <div class="api-url">https://app.omie.com.br/api/v1/ (credenciais BMA)</div>
+              </div>
+            </div>
+            <div class="api-meta">
+              <span class="pill purple">contapagar (1.232)</span>
+              <span class="pill purple">contareceber (100)</span>
+              <span class="pill purple">clientes (86)</span>
+            </div>
+            <div class="api-detail"><strong>Auth:</strong> app_key (4602985397010) + app_secret</div>
+            <div class="api-detail"><strong>Incremental:</strong> CP ultimas 5 pags, CR full (2 pags), clientes cache 7d</div>
+            <div class="api-detail"><strong>Relacao:</strong> BMA e o backoffice/RH da Better. Emite NFs mensais (~R$200-350k) para a Better, mas essas NFs NAO estao lancadas no Omie Better (flag "pending NF")</div>
+            <div style="margin-top:8px">
+              <span class="badge-incr incremental">Incremental</span>
+              <span class="badge-incr cache">Cache 7d (clientes)</span>
+            </div>
+          </div>
+
+          <!-- Planilha -->
+          <div class="api-card" style="border-color:#60a5fa">
+            <div class="api-card-header">
+              <div class="api-icon">&#128202;</div>
+              <div>
+                <div class="api-name">Planilha de Vendas</div>
+                <div class="api-url">Vendas para Emissao de NF (5).xlsx</div>
+              </div>
+            </div>
+            <div class="api-meta">
+              <span class="pill">Aba Vendas (3.328)</span>
+              <span class="pill">Aba Alunos (3.569)</span>
+              <span class="pill">Aba Cancelamentos (1.928)</span>
+            </div>
+            <div class="api-detail"><strong>Import:</strong> via build_alunos_v2.py (manual)</div>
+            <div class="api-detail"><strong>Dados:</strong> CPF, nome, email, produto, valor, renovacao, cancelamento</div>
+            <div class="api-detail"><strong>Alunos:</strong> inicio/fim, nivel</div>
+            <div style="margin-top:8px">
+              <span class="badge-incr full">Import Manual</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 3. DATABASE SCHEMA ============ -->
+    <section class="section fade-in" id="database">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128451;</span>
+        <h2>Banco de Dados &mdash; Neon PostgreSQL</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+
+        <!-- Connection info -->
+        <div class="domains-box" style="margin-bottom:16px">
+          <strong>Conexao:</strong> <code>ep-snowy-shadow-a4hoyxtl-pooler.us-east-1.aws.neon.tech</code><br>
+          <strong>Database:</strong> <code>financeiro</code> &nbsp;|&nbsp;
+          <strong>User:</strong> <code>neondb_owner</code> &nbsp;|&nbsp;
+          <strong>SSL:</strong> required<br>
+          <span style="font-size:10px;color:#475569">Mesmo projeto Neon do Alumni (sem custo extra)</span>
+        </div>
+
+        <!-- Upsert rules -->
+        <div class="domains-box" style="margin-bottom:16px">
+          <strong>Regras de Upsert:</strong><br>
+          <code>ON CONFLICT (chave) DO UPDATE SET campos_que_mudam</code><br>
+          Batch de 200 registros com reconexao automatica (Neon pooler dropa SSL em ops longas)<br>
+          3 retries por batch com delay de 3s
+        </div>
+
+        <div class="schema-grid">
+
+          <!-- vindi_bills -->
+          <div class="table-card tc-source-vindi" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#4ade80"></div>
+              <div class="tc-name">vindi_bills</div>
+              <div class="tc-count">7.652</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: vindi_id</div>
+              <div class="tc-desc">Faturas pagas Vindi</div>
+            </div>
+            <div class="table-card-cols">
+              <div>vindi_id (BIGINT, PK)</div>
+              <div>customer_id (BIGINT, FK)</div>
+              <div>amount (NUMERIC)</div>
+              <div>status (VARCHAR)</div>
+              <div>created_at (TIMESTAMP)</div>
+              <div>due_at (DATE)</div>
+              <div>paid_at (TIMESTAMP)</div>
+              <div>payment_method (VARCHAR)</div>
+              <div>product_name (VARCHAR)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- vindi_customers -->
+          <div class="table-card tc-source-vindi" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#4ade80"></div>
+              <div class="tc-name">vindi_customers</div>
+              <div class="tc-count">3.473</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: vindi_id</div>
+              <div class="tc-desc">Clientes Vindi</div>
+            </div>
+            <div class="table-card-cols">
+              <div>vindi_id (BIGINT, PK)</div>
+              <div>name (VARCHAR)</div>
+              <div>email (VARCHAR)</div>
+              <div>cpf (VARCHAR)</div>
+              <div>status (VARCHAR)</div>
+              <div>created_at (TIMESTAMP)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- omie_contas_pagar -->
+          <div class="table-card tc-source-omie" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#f87171"></div>
+              <div class="tc-name">omie_contas_pagar</div>
+              <div class="tc-count">2.669</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: omie_id</div>
+              <div class="tc-desc">Despesas Better</div>
+            </div>
+            <div class="table-card-cols">
+              <div>omie_id (BIGINT, PK)</div>
+              <div>fornecedor (VARCHAR)</div>
+              <div>categoria (VARCHAR)</div>
+              <div>valor (NUMERIC)</div>
+              <div>status_titulo (VARCHAR)</div>
+              <div>data_emissao (DATE)</div>
+              <div>data_vencimento (DATE)</div>
+              <div>data_previsao (DATE)</div>
+              <div>fonte (VARCHAR)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- omie_clientes -->
+          <div class="table-card tc-source-omie" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#f87171"></div>
+              <div class="tc-name">omie_clientes</div>
+              <div class="tc-count">3.212</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: omie_cod</div>
+              <div class="tc-desc">Fornecedores Better</div>
+            </div>
+            <div class="table-card-cols">
+              <div>omie_cod (BIGINT, PK)</div>
+              <div>razao_social (VARCHAR)</div>
+              <div>cnpj_cpf (VARCHAR)</div>
+              <div>fantasia (VARCHAR)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- omie_nfse -->
+          <div class="table-card tc-source-omie" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#f87171"></div>
+              <div class="tc-name">omie_nfse</div>
+              <div class="tc-count">8.408</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: omie_id</div>
+              <div class="tc-desc">NFS-e (Notas Servico)</div>
+            </div>
+            <div class="table-card-cols">
+              <div>omie_id (BIGINT, PK)</div>
+              <div>numero_nf (VARCHAR)</div>
+              <div>cliente (VARCHAR)</div>
+              <div>valor (NUMERIC)</div>
+              <div>data_emissao (DATE)</div>
+              <div>status (VARCHAR)</div>
+              <div>cpf_cnpj (VARCHAR)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- omie_nfe -->
+          <div class="table-card tc-source-omie" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#f87171"></div>
+              <div class="tc-name">omie_nfe</div>
+              <div class="tc-count">1.591</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: omie_id</div>
+              <div class="tc-desc">NF-e (Notas Produto)</div>
+            </div>
+            <div class="table-card-cols">
+              <div>omie_id (BIGINT, PK)</div>
+              <div>numero_nf (VARCHAR)</div>
+              <div>cliente (VARCHAR)</div>
+              <div>valor (NUMERIC)</div>
+              <div>data_emissao (DATE)</div>
+              <div>status (VARCHAR)</div>
+              <div>cpf_cnpj (VARCHAR)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- bma_contas_pagar -->
+          <div class="table-card tc-source-bma" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#c084fc"></div>
+              <div class="tc-name">bma_contas_pagar</div>
+              <div class="tc-count">1.232</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: omie_id</div>
+              <div class="tc-desc">Despesas BMA (Folha/Beneficios/Impostos)</div>
+            </div>
+            <div class="table-card-cols">
+              <div>omie_id (BIGINT, PK)</div>
+              <div>fornecedor (VARCHAR)</div>
+              <div>categoria (VARCHAR)</div>
+              <div>valor (NUMERIC)</div>
+              <div>status_titulo (VARCHAR)</div>
+              <div>data_previsao (DATE)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- bma_contas_receber -->
+          <div class="table-card tc-source-bma" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#c084fc"></div>
+              <div class="tc-name">bma_contas_receber</div>
+              <div class="tc-count">100</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: omie_id</div>
+              <div class="tc-desc">Recebiveis BMA</div>
+            </div>
+            <div class="table-card-cols">
+              <div>omie_id (BIGINT, PK)</div>
+              <div>cliente (VARCHAR)</div>
+              <div>valor (NUMERIC)</div>
+              <div>status (VARCHAR)</div>
+              <div>data_vencimento (DATE)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- pagarme_transacoes -->
+          <div class="table-card tc-source-pagarme" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#f472b6"></div>
+              <div class="tc-name">pagarme_transacoes</div>
+              <div class="tc-count">200</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: tid</div>
+              <div class="tc-desc">Estornos + Chargebacks</div>
+            </div>
+            <div class="table-card-cols">
+              <div>tid (BIGINT, PK)</div>
+              <div>amount (NUMERIC)</div>
+              <div>status (VARCHAR)</div>
+              <div>customer_name (VARCHAR)</div>
+              <div>customer_cpf (VARCHAR)</div>
+              <div>date_created (TIMESTAMP)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- vendas_planilha -->
+          <div class="table-card tc-source-planilha" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#60a5fa"></div>
+              <div class="tc-name">vendas_planilha</div>
+              <div class="tc-count">3.328</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: serial id</div>
+              <div class="tc-desc">Vendas (import manual)</div>
+            </div>
+            <div class="table-card-cols">
+              <div>id (SERIAL, PK)</div>
+              <div>cpf (VARCHAR)</div>
+              <div>nome (VARCHAR)</div>
+              <div>email (VARCHAR)</div>
+              <div>produto (VARCHAR)</div>
+              <div>valor (NUMERIC)</div>
+              <div>renovacao (BOOLEAN)</div>
+              <div>cancelamento (DATE)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- veiculos_flag -->
+          <div class="table-card tc-source-system" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#64748b"></div>
+              <div class="tc-name">veiculos_flag</div>
+              <div class="tc-count">64</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: omie_id</div>
+              <div class="tc-desc">Flag de despesas veiculos</div>
+            </div>
+            <div class="table-card-cols">
+              <div>omie_id (BIGINT, PK)</div>
+              <div>fornecedor (VARCHAR)</div>
+              <div>valor (NUMERIC)</div>
+              <div>categoria (VARCHAR)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- dashboard_snapshot -->
+          <div class="table-card tc-source-system" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#64748b"></div>
+              <div class="tc-name">dashboard_snapshot</div>
+              <div class="tc-count">33</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: serial id</div>
+              <div class="tc-desc">Snapshot para changelog</div>
+            </div>
+            <div class="table-card-cols">
+              <div>id (SERIAL, PK)</div>
+              <div>month (VARCHAR)</div>
+              <div>data (JSONB)</div>
+              <div>created_at (TIMESTAMP)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+          <!-- update_log -->
+          <div class="table-card tc-source-system" onclick="toggleCols(this)">
+            <div class="table-card-header">
+              <div class="tc-dot" style="background:#64748b"></div>
+              <div class="tc-name">update_log</div>
+              <div class="tc-count">&mdash;</div>
+            </div>
+            <div class="table-card-body">
+              <div class="tc-key">PK: serial id</div>
+              <div class="tc-desc">Log de atualizacoes</div>
+            </div>
+            <div class="table-card-cols">
+              <div>id (SERIAL, PK)</div>
+              <div>mode (VARCHAR)</div>
+              <div>started_at (TIMESTAMP)</div>
+              <div>finished_at (TIMESTAMP)</div>
+              <div>records_updated (INT)</div>
+              <div>errors (TEXT)</div>
+            </div>
+            <div class="expand-hint">Clique para ver colunas</div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4. BUSINESS RULES ============ -->
+    <section class="section fade-in" id="rules">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128220;</span>
+        <h2>Regras de Negocio</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="rules-grid">
+
+          <!-- 4.1 Despesas Better -->
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-number red">4.1</span>
+              <span class="rule-title">Despesas Better</span>
+              <span class="rule-badge operacional">Operacional</span>
+            </div>
+            <div class="rule-body">
+              <p><strong style="color:#f8fafc">Fonte:</strong> <code>omie_contas_pagar</code> WHERE fonte='Better'</p>
+              <p><strong style="color:#f8fafc">Exclusoes:</strong></p>
+              <ul style="margin-left:20px;margin-bottom:8px">
+                <li><code>status_titulo = 'CANCELADO'</code> &rarr; excluido</li>
+                <li><code>omie_id IN veiculos_flag</code> &rarr; movido para pagina confidencial</li>
+                <li>Flash App &rarr; removido (ja esta na BMA)</li>
+              </ul>
+              <p><strong style="color:#f8fafc">Data de referencia:</strong> <code>data_previsao</code> (data do pagamento), com fallback para <code>data_vencimento</code>, depois <code>data_emissao</code></p>
+              <p style="color:#64748b"><em>Motivo: data_emissao e quando o documento foi criado, data_previsao e quando foi efetivamente pago. Ex: Learning Lab emitido em marco mas pago em abril.</em></p>
+              <div class="rule-tables">
+                <span class="rt">omie_contas_pagar</span>
+                <span class="rt">veiculos_flag</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.2 BMA -->
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-number purple">4.2</span>
+              <span class="rule-title">BMA (Consulta)</span>
+              <span class="rule-badge contabil">Contabil</span>
+            </div>
+            <div class="rule-body">
+              <p><strong style="color:#f8fafc">Fonte:</strong> <code>bma_contas_pagar</code> WHERE status != 'CANCELADO'</p>
+              <p><strong style="color:#f8fafc">Status:</strong> <span style="color:#f87171;font-weight:700">SOMENTE CONSULTA</span>, nao soma no resultado</p>
+              <p><strong style="color:#f8fafc">Motivo:</strong> BMA emite NFs para Better (~R$200-350k/mes), mas essas NFs nao estao lancadas no Omie Better. Quando forem lancadas, BMA passa a ser so drill-down.</p>
+              <p><strong style="color:#f8fafc">Flag:</strong> <span style="color:#f87171">"NF Pendente"</span> em vermelho no dashboard</p>
+              <div class="rule-tables">
+                <span class="rt">bma_contas_pagar</span>
+                <span class="rt">bma_contas_receber</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.3 Veiculos -->
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-number amber">4.3</span>
+              <span class="rule-title">Veiculos (Confidencial)</span>
+              <span class="rule-badge operacional">Operacional</span>
+            </div>
+            <div class="rule-body">
+              <p><strong style="color:#f8fafc">Fornecedores flagged:</strong> Grand Point, Porto Seguro Capitalizacao, IPVA, PSMAXX, Sem Parar, Licenciamento, Visual Inspecao, Senatran</p>
+              <p><strong style="color:#f8fafc">Categorias flagged:</strong> <code>2.07.02, 2.06.93, 2.04.90, 2.11.96, 2.11.99, 2.04.95</code></p>
+              <p><strong style="color:#f8fafc">Total:</strong> <span style="color:#fbbf24;font-weight:800;font-size:16px">R$ 2.55M</span> (64 registros)</p>
+              <p><strong style="color:#f8fafc">Regra:</strong> removidos das despesas operacionais, visivel apenas na pagina confidencial</p>
+              <div class="rule-tables">
+                <span class="rt">veiculos_flag</span>
+                <span class="rt">omie_contas_pagar</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.4 Estornos -->
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-number amber">4.4</span>
+              <span class="rule-title">Estornos</span>
+              <span class="rule-badge fiscal">Fiscal</span>
+            </div>
+            <div class="rule-body">
+              <p><strong style="color:#f8fafc">Fontes:</strong> Pagar.me refunded (183) + Pagar.me chargedback (16)</p>
+              <p><strong style="color:#f8fafc">Dedup:</strong> 1 removida (mesmo CPF + mesmo valor + &lt;60 dias entre refund e chargeback)</p>
+              <p><strong style="color:#f8fafc">Total:</strong> <span style="color:#fbbf24;font-weight:800;font-size:16px">199 registros, R$ 532k</span></p>
+              <div class="code-block">CALCULO RESULTADO = Receitas - Despesas - Estornos</div>
+              <div class="rule-tables">
+                <span class="rt">pagarme_transacoes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.5 Receitas -->
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-number green">4.5</span>
+              <span class="rule-title">Receitas</span>
+              <span class="rule-badge contabil">Contabil</span>
+            </div>
+            <div class="rule-body">
+              <p><strong style="color:#f8fafc">Fonte:</strong> <code>vindi_bills</code> WHERE status='paid'</p>
+              <p><strong style="color:#f8fafc">Agrupamento:</strong> por <code>created_at</code> (mes/ano)</p>
+              <p><strong style="color:#f8fafc">Recorrencia vs Compra:</strong> faturas mensais Vindi sao parcelas do mesmo contrato (recorrencia), NAO compras separadas. Compra real = entrada na planilha de vendas.</p>
+              <div class="rule-tables">
+                <span class="rt">vindi_bills</span>
+                <span class="rt">vendas_planilha</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.6 NFS-e e NF-e -->
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-number orange">4.6</span>
+              <span class="rule-title">NFS-e e NF-e (Regra 50/50)</span>
+              <span class="rule-badge fiscal">Fiscal</span>
+            </div>
+            <div class="rule-body">
+              <p><strong style="color:#f8fafc">NFS-e:</strong> Notas de Servico (ISS ~2% Cajamar)</p>
+              <p><strong style="color:#f8fafc">NF-e:</strong> Notas de Produto (material didatico, ICMS diferido = isento)</p>
+              <p><strong style="color:#f8fafc">Regra:</strong> vendas CPF devem ser <span style="color:#f97316;font-weight:700">50% servico + 50% produto</span></p>
+              <p><strong style="color:#f8fafc">Excecoes:</strong> B2B (CNPJ) e Aulas Particulares = 100% servico OK</p>
+              <p><strong style="color:#f8fafc">Status atual:</strong> ratio <span style="color:#f87171;font-weight:700">1.88x</span> (deveria ser 1.0x), ISS pago a mais ~R$ 46k</p>
+              <p><strong style="color:#f8fafc">Recomendacao:</strong> corrigir split em todas as novas vendas CPF</p>
+              <div class="rule-tables">
+                <span class="rt">omie_nfse</span>
+                <span class="rt">omie_nfe</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.7 Pendentes -->
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-number blue">4.7</span>
+              <span class="rule-title">Pendentes (Inadimplencia)</span>
+              <span class="rule-badge operacional">Operacional</span>
+            </div>
+            <div class="rule-body">
+              <p><strong style="color:#f8fafc">Fonte:</strong> Vindi bills status=pending (fetch sempre fresh, nao armazena)</p>
+              <p><strong style="color:#f8fafc">Significado:</strong> faturas geradas aguardando pagamento do aluno</p>
+              <p><strong style="color:#f8fafc">Tipos:</strong> boletos nao pagos, PIX nao confirmado, cartao pendente</p>
+              <p><strong style="color:#f8fafc">Inadimplencia:</strong> pendentes &gt;90 dias = inadimplencia real</p>
+              <div class="rule-tables">
+                <span class="rt">vindi_bills (live fetch)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.8 Professores PJ -->
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-number cyan">4.8</span>
+              <span class="rule-title">Professores PJ</span>
+              <span class="rule-badge operacional">Operacional</span>
+            </div>
+            <div class="rule-body">
+              <p><strong style="color:#f8fafc">Categorias:</strong> <code>2.16.xx</code> (prestadores PJ), <code>2.09.01</code> (instrutores)</p>
+              <p><strong style="color:#f8fafc">Portal Alumni:</strong> 18 ativos, 7 inativos (ainda recebendo ~R$61k em 2026)</p>
+              <p><strong style="color:#f87171;font-weight:700">Alerta:</strong> 7 inativos com 0 aulas mas pagamentos ativos</p>
+              <div class="rule-tables">
+                <span class="rt">omie_contas_pagar</span>
+                <span class="rt">omie_clientes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.9 Alunos -->
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-number cyan">4.9</span>
+              <span class="rule-title">Alunos (Base Unificada)</span>
+              <span class="rule-badge contabil">Contabil</span>
+            </div>
+            <div class="rule-body">
+              <p><strong style="color:#f8fafc">Fontes:</strong> Planilha vendas (3.328) + Vindi bills (2.852 clientes)</p>
+              <p><strong style="color:#f8fafc">Total unificado:</strong> <span style="color:#22d3ee;font-weight:800;font-size:16px">3.060 alunos</span></p>
+              <p><strong style="color:#f8fafc">Match:</strong> 2.638 cruzados (86%)</p>
+              <p><strong style="color:#f8fafc">Classificacao:</strong></p>
+              <ul style="margin-left:20px;margin-bottom:8px">
+                <li><strong style="color:#cbd5e1">Status:</strong> Ativo / Cancelado / Expirado / Ativo (Vindi) / Inativo</li>
+                <li><strong style="color:#cbd5e1">Modalidade:</strong> Community (2.249) / Flow (518) / Private (173) / Espanhol (68) / In-Company (35) / Imersao (17)</li>
+              </ul>
+              <p><strong style="color:#f8fafc">Renovacao real:</strong> CPF com 2+ entradas na planilha de vendas (401 alunos)</p>
+              <div class="rule-tables">
+                <span class="rt">vendas_planilha</span>
+                <span class="rt">vindi_bills</span>
+                <span class="rt">vindi_customers</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 5. CRON & SCHEDULE ============ -->
+    <section class="section fade-in" id="cron">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128339;</span>
+        <h2>Cron & Schedule de Atualizacao</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+
+        <!-- Visual Timeline -->
+        <div style="margin-bottom:16px">
+          <p style="font-size:11px;color:#64748b;margin-bottom:8px">Calendario Mensal (visualizacao dos dias 1-31):</p>
+          <div class="cron-timeline" id="cronTimeline"></div>
+          <div style="display:flex;gap:20px;margin-top:8px">
+            <span style="display:flex;align-items:center;gap:6px;font-size:10px;color:#64748b">
+              <span style="width:12px;height:12px;background:#60a5fa;border-radius:50%;display:inline-block"></span> Incremental (13h + 19h)
+            </span>
+            <span style="display:flex;align-items:center;gap:6px;font-size:10px;color:#64748b">
+              <span style="width:20px;height:20px;background:#4ade80;border-radius:50%;display:inline-block"></span> Full Refresh (dias 1, 11, 21)
+            </span>
+          </div>
+        </div>
+
+        <!-- Schedule Table -->
+        <table class="cron-table">
+          <thead>
+            <tr>
+              <th>Cron Expression</th>
+              <th>Horario BRT</th>
+              <th>Modo</th>
+              <th>Duracao</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code style="color:#fbbf24">0 16 * * *</code></td>
+              <td>13h diario</td>
+              <td><span class="badge-incr incremental">Incremental</span></td>
+              <td><span class="duration-badge fast">~3-5min</span></td>
+            </tr>
+            <tr>
+              <td><code style="color:#fbbf24">0 22 * * *</code></td>
+              <td>19h diario</td>
+              <td><span class="badge-incr incremental">Incremental</span></td>
+              <td><span class="duration-badge fast">~3-5min</span></td>
+            </tr>
+            <tr>
+              <td><code style="color:#fbbf24">0 14 1,11,21 * *</code></td>
+              <td>11h dias 1/11/21</td>
+              <td><span class="badge-incr full">Full Refresh</span></td>
+              <td><span class="duration-badge slow">~40min</span></td>
+            </tr>
+            <tr>
+              <td><code style="color:#fbbf24">workflow_dispatch</code></td>
+              <td>Qualquer hora</td>
+              <td>Manual (escolha)</td>
+              <td><span class="duration-badge" style="background:rgba(96,165,250,0.1);color:#60a5fa">Variavel</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Incremental vs Full -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px">
+            <h4 style="font-size:13px;color:#60a5fa;margin-bottom:10px">Modo Incremental</h4>
+            <div style="font-size:11px;line-height:2">
+              <div>&#8226; Vindi bills: so novos (MAX created_at)</div>
+              <div>&#8226; Omie CP: ultimas 10 paginas</div>
+              <div>&#8226; NFS-e: ultimas 5 paginas</div>
+              <div>&#8226; NF-e: ultimas 3 paginas</div>
+              <div>&#8226; BMA CP: ultimas 5 paginas</div>
+              <div>&#8226; Clientes: skip se &lt;7 dias (carrega do banco)</div>
+            </div>
+          </div>
+          <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px">
+            <h4 style="font-size:13px;color:#4ade80;margin-bottom:10px">Modo Full Refresh</h4>
+            <div style="font-size:11px;line-height:2">
+              <div>&#8226; Ignora cache e recent_pages</div>
+              <div>&#8226; Puxa TUDO de todas as APIs</div>
+              <div>&#8226; Compara com snapshot anterior</div>
+              <div>&#8226; Detecta alteracoes retroativas</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post-fetch flow -->
+        <div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;margin-top:16px">
+          <h4 style="font-size:12px;color:#94a3b8;margin-bottom:10px">Fluxo pos-fetch:</h4>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px">
+            <span style="padding:6px 12px;background:#1e293b;border-radius:8px;color:#60a5fa;font-weight:600">1. Upsert Neon</span>
+            <span style="color:#334155">&#10140;</span>
+            <span style="padding:6px 12px;background:#1e293b;border-radius:8px;color:#fbbf24;font-weight:600">2. Gera JS files</span>
+            <span style="color:#334155">&#10140;</span>
+            <span style="padding:6px 12px;background:#1e293b;border-radius:8px;color:#c084fc;font-weight:600">3. Gera changelog</span>
+            <span style="color:#334155">&#10140;</span>
+            <span style="padding:6px 12px;background:#1e293b;border-radius:8px;color:#f472b6;font-weight:600">4. Salva snapshot</span>
+            <span style="color:#334155">&#10140;</span>
+            <span style="padding:6px 12px;background:#1e293b;border-radius:8px;color:#4ade80;font-weight:600">5. Git push (Vercel)</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ 6. DASHBOARD PAGES MAP ============ -->
+    <section class="section fade-in" id="pages">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128506;</span>
+        <h2>Paginas do Dashboard (13 paginas)</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="pages-grid">
+
+          <div class="page-card accent-darkblue">
+            <div class="pc-name">Landing</div>
+            <div class="pc-url">index.html</div>
+            <div class="pc-desc">Hub central com tiles para todos os relatorios</div>
+          </div>
+          <div class="page-card accent-blue">
+            <div class="pc-name">Dashboard</div>
+            <div class="pc-url">dashboard.html</div>
+            <div class="pc-desc">Tabela mensal, grafico, changelog</div>
+          </div>
+          <div class="page-card accent-green">
+            <div class="pc-name">Receitas</div>
+            <div class="pc-url">receitas.html</div>
+            <div class="pc-desc">Bills Vindi, clicavel, renovacoes</div>
+          </div>
+          <div class="page-card accent-red">
+            <div class="pc-name">Despesas</div>
+            <div class="pc-url">despesas.html</div>
+            <div class="pc-desc">Better + BMA com badges</div>
+          </div>
+          <div class="page-card accent-purple">
+            <div class="pc-name">BMA</div>
+            <div class="pc-url">bma.html</div>
+            <div class="pc-desc">Folha/beneficios/impostos</div>
+          </div>
+          <div class="page-card accent-orange">
+            <div class="pc-name">Fiscal</div>
+            <div class="pc-url">fiscal.html</div>
+            <div class="pc-desc">50/50, DRE simplificado</div>
+          </div>
+          <div class="page-card accent-teal">
+            <div class="pc-name">Contabilidade</div>
+            <div class="pc-url">contabilidade.html</div>
+            <div class="pc-desc">DRE completo, balancete, auditoria</div>
+          </div>
+          <div class="page-card accent-cyan">
+            <div class="pc-name">Alunos</div>
+            <div class="pc-url">alunos.html</div>
+            <div class="pc-desc">Base 3.060, importacao portal</div>
+          </div>
+          <div class="page-card accent-red">
+            <div class="pc-name">Veiculos</div>
+            <div class="pc-url">veiculos.html</div>
+            <div class="pc-desc">Confidencial (senha)</div>
+          </div>
+          <div class="page-card accent-amber">
+            <div class="pc-name">Notas</div>
+            <div class="pc-url">notas.html</div>
+            <div class="pc-desc">Produto vs Servico</div>
+          </div>
+          <div class="page-card accent-cyan">
+            <div class="pc-name">Vendas</div>
+            <div class="pc-url">vendas.html</div>
+            <div class="pc-desc">Comissao vs Plataformas</div>
+          </div>
+          <div class="page-card accent-red">
+            <div class="pc-name">Turnaround</div>
+            <div class="pc-url">turnaround.html</div>
+            <div class="pc-desc">Reestruturacao</div>
+          </div>
+          <div class="page-card accent-green">
+            <div class="pc-name">BizPlan</div>
+            <div class="pc-url">bizplan.html</div>
+            <div class="pc-desc">Projecao 12 meses</div>
+          </div>
+
+        </div>
+
+        <!-- Domains -->
+        <div class="domains-box">
+          <p style="margin-bottom:6px"><strong>Vercel direto:</strong> <code>financeiro-better.vercel.app</code></p>
+          <p style="margin-bottom:6px"><strong>Dominio i10:</strong> <code>institutoi10.com.br/better-financeiro</code></p>
+          <p style="margin-bottom:6px"><strong>Deploy:</strong> automatico via git push (GitHub &rarr; Vercel)</p>
+          <p><strong>Sync:</strong> LP-i10 repo espelha os arquivos de better-financeiro/</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 7. JS FILES PIPELINE ============ -->
+    <section class="section fade-in" id="pipeline">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128196;</span>
+        <h2>Arquivos JS Gerados (Pipeline)</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+
+        <!-- Visual Pipeline -->
+        <div class="pipeline-flow">
+          <div class="pf-step db">&#128451; Neon DB</div>
+          <div class="pf-arrow">&#10140;</div>
+          <div class="pf-step sql">&#128269; SQL Query</div>
+          <div class="pf-arrow">&#10140;</div>
+          <div class="pf-step js">&#128196; .js File</div>
+          <div class="pf-arrow">&#10140;</div>
+          <div class="pf-step html">&#127760; HTML Page</div>
+        </div>
+
+        <table class="pipeline-table sortable" id="pipelineTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable('pipelineTable',0)">Arquivo <span class="sort-arrow">&#9650;&#9660;</span></th>
+              <th onclick="sortTable('pipelineTable',1)">Conteudo <span class="sort-arrow">&#9650;&#9660;</span></th>
+              <th onclick="sortTable('pipelineTable',2)">Gerado por <span class="sort-arrow">&#9650;&#9660;</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>dashboard_data.js</td><td>dashData: agregacao mensal</td><td><span class="badge-incr incremental">update_data.py (cron)</span></td></tr>
+            <tr><td>despesas_all_data.js</td><td>data: Better + BMA despesas</td><td><span class="badge-incr incremental">update_data.py (cron)</span></td></tr>
+            <tr><td>bma_data.js</td><td>bmaDesp, bmaRec, bmaAll</td><td><span class="badge-incr incremental">update_data.py (cron)</span></td></tr>
+            <tr><td>receitas_all_data.js</td><td>data: Vindi bills</td><td><span class="badge-incr incremental">update_data.py (cron)</span></td></tr>
+            <tr><td>veiculos_data.js</td><td>veiculosData: despesas veiculos</td><td><span class="badge-incr incremental">update_data.py (cron)</span></td></tr>
+            <tr><td>changelog.js</td><td>changelog: diferencas entre updates</td><td><span class="badge-incr incremental">update_data.py (cron)</span></td></tr>
+            <tr><td>alunos_data.js</td><td>alunosData, alunosStats</td><td><span class="badge-incr full">build_alunos_v2.py (manual)</span></td></tr>
+            <tr><td>receitas_customers.js</td><td>customerData, renewalStats</td><td><span class="badge-incr full">generate_customers.py (manual)</span></td></tr>
+            <tr><td>dashboard_flags.js</td><td>dashFlags: despesas atipicas</td><td><span class="badge-incr" style="background:rgba(100,116,139,0.1);color:#64748b">estatico</span></td></tr>
+            <tr><td>dashboard_diffs.js</td><td>dashDiffs: ERP vs API</td><td><span class="badge-incr" style="background:rgba(100,116,139,0.1);color:#64748b">estatico</span></td></tr>
+            <tr><td>dashboard_divergences.js</td><td>dashDivergences: conciliacao</td><td><span class="badge-incr" style="background:rgba(100,116,139,0.1);color:#64748b">estatico</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 8. SCRIPTS ============ -->
+    <section class="section fade-in" id="scripts">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128295;</span>
+        <h2>Scripts de Manutencao</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <table class="scripts-table sortable" id="scriptsTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable('scriptsTable',0)">Script <span class="sort-arrow">&#9650;&#9660;</span></th>
+              <th onclick="sortTable('scriptsTable',1)">Funcao <span class="sort-arrow">&#9650;&#9660;</span></th>
+              <th onclick="sortTable('scriptsTable',2)">Quando Usar <span class="sort-arrow">&#9650;&#9660;</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>update_data.py</td><td>Cron principal (incremental/full)</td><td>Automatico 2x/dia</td></tr>
+            <tr><td>migrate_to_neon.py</td><td>Migracao inicial para o banco</td><td>Uma vez (ja executado)</td></tr>
+            <tr><td>build_alunos_v2.py</td><td>Gera base de alunos</td><td>Quando atualizar planilha</td></tr>
+            <tr><td>generate_customers.py</td><td>Cruza Vindi x planilha</td><td>Quando atualizar planilha</td></tr>
+            <tr><td>fetch_bma.py</td><td>Fetch manual dados BMA</td><td><span style="color:#f87171">Descontinuado</span> (integrado no cron)</td></tr>
+            <tr><td>bma_analise.py</td><td>Gera Excel analise BMA</td><td>Sob demanda</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 9. AUDIT FINDINGS ============ -->
+    <section class="section fade-in" id="audit">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128269;</span>
+        <h2>Findings de Auditoria (Big 4 Style)</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="findings-grid">
+
+          <div class="finding-card">
+            <div class="finding-number alta">1</div>
+            <div class="finding-content">
+              <span class="finding-severity alta">ALTA</span>
+              <div class="finding-title">NFs BMA nao lancadas no Omie Better</div>
+              <div class="finding-value" style="color:#f87171">R$ 3.73M</div>
+              <div class="finding-desc">BMA emite NFs mensais para a Better (~R$200-350k/mes) que nao estao registradas no Omie Better, criando uma divergencia significativa entre o que e pago e o que esta contabilizado.</div>
+              <div class="finding-rec">Recomendacao: Lancar todas NFs mensais da BMA no Omie Better</div>
+            </div>
+          </div>
+
+          <div class="finding-card">
+            <div class="finding-number alta">2</div>
+            <div class="finding-content">
+              <span class="finding-severity alta">ALTA</span>
+              <div class="finding-title">Desequilibrio fiscal 50/50</div>
+              <div class="finding-value" style="color:#f87171">R$ 46k ISS a mais</div>
+              <div class="finding-desc">O ratio NFS-e/NF-e esta em 1.88x ao inves de 1.0x. Vendas CPF deveriam ser 50% servico + 50% produto, mas ha emissao excessiva de NFS-e, resultando em pagamento excedente de ISS.</div>
+              <div class="finding-rec">Recomendacao: Corrigir split em todas as novas vendas CPF</div>
+            </div>
+          </div>
+
+          <div class="finding-card">
+            <div class="finding-number media">3</div>
+            <div class="finding-content">
+              <span class="finding-severity media">MEDIA</span>
+              <div class="finding-title">Veiculos como despesa operacional</div>
+              <div class="finding-value" style="color:#fbbf24">R$ 2.55M</div>
+              <div class="finding-desc">64 registros de despesas com veiculos (Grand Point, Porto Seguro, IPVA, etc.) estao classificados como despesas operacionais. Foram segregados na pagina confidencial.</div>
+              <div class="finding-rec">Recomendacao: Classificar como ativo/investimento</div>
+            </div>
+          </div>
+
+          <div class="finding-card">
+            <div class="finding-number media">4</div>
+            <div class="finding-content">
+              <span class="finding-severity media">MEDIA</span>
+              <div class="finding-title">Inadimplencia Vindi</div>
+              <div class="finding-value" style="color:#fbbf24">R$ 894k pendentes</div>
+              <div class="finding-desc">Volume significativo de faturas Vindi em status pendente, incluindo boletos nao pagos, PIX nao confirmado, e cartao pendente. Pendentes &gt;90 dias sao inadimplencia real.</div>
+              <div class="finding-rec">Recomendacao: Regua de cobranca automatica</div>
+            </div>
+          </div>
+
+          <div class="finding-card">
+            <div class="finding-number media">5</div>
+            <div class="finding-content">
+              <span class="finding-severity media">MEDIA</span>
+              <div class="finding-title">Professores inativos pagos</div>
+              <div class="finding-value" style="color:#fbbf24">R$ 61k/2026</div>
+              <div class="finding-desc">7 professores PJ marcados como inativos no Portal Alumni (0 aulas ministradas) continuam recebendo pagamentos ativos em 2026.</div>
+              <div class="finding-rec">Recomendacao: Encerrar contratos inativos</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 10. FORMULAS ============ -->
+    <section class="section fade-in" id="formulas">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#129518;</span>
+        <h2>Formulas do Dashboard</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <div class="formulas-block">
+<span class="fm-keyword">RECEITA BRUTA</span>        = <span class="fm-func">SUM</span>(<span class="fm-table">vindi_bills</span>.amount) <span class="fm-keyword">WHERE</span> status=paid
+<span class="fm-keyword">ESTORNOS</span>             = <span class="fm-func">SUM</span>(<span class="fm-table">pagarme</span>.amount) <span class="fm-keyword">WHERE</span> refunded <span class="fm-op">+</span> chargedback <span class="fm-op">-</span> duplicatas
+<span class="fm-keyword">RECEITA LIQUIDA</span>      = <span class="fm-keyword">RECEITA BRUTA</span> <span class="fm-op">-</span> <span class="fm-keyword">ESTORNOS</span>
+<span class="fm-keyword">DESPESAS BETTER</span>      = <span class="fm-func">SUM</span>(<span class="fm-table">omie_cp</span>.valor) <span class="fm-keyword">WHERE</span> <span class="fm-op">NOT</span> cancelado <span class="fm-op">AND NOT</span> veiculo
+<span class="fm-keyword">BMA</span> <span class="fm-comment">(consulta)</span>       = <span class="fm-func">SUM</span>(<span class="fm-table">bma_cp</span>.valor) <span class="fm-keyword">WHERE</span> <span class="fm-op">NOT</span> cancelado
+<span class="fm-keyword">RESULTADO</span>            = <span class="fm-keyword">RECEITA LIQUIDA</span> <span class="fm-op">-</span> <span class="fm-keyword">DESPESAS BETTER</span>
+<span class="fm-keyword">NFS-e</span>                = <span class="fm-func">SUM</span>(<span class="fm-table">omie_nfse</span>.valor) <span class="fm-keyword">WHERE</span> <span class="fm-op">NOT</span> cancelada
+<span class="fm-keyword">NF-e</span>                 = <span class="fm-func">SUM</span>(<span class="fm-table">omie_nfe</span>.valor) <span class="fm-keyword">WHERE</span> <span class="fm-op">NOT</span> cancelado
+<span class="fm-keyword">PENDENTES</span>            = <span class="fm-func">SUM</span>(<span class="fm-table">vindi_pending</span>.amount) <span class="fm-comment">-- fetch fresh, nao armazena</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 11. SECRETS ============ -->
+    <section class="section fade-in" id="secrets">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span class="sec-icon">&#128272;</span>
+        <h2>GitHub Secrets & Config</h2>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="section-body">
+        <table class="secrets-table">
+          <thead>
+            <tr>
+              <th>Secret Name</th>
+              <th>Valor</th>
+              <th>Uso</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="secret-name">DATABASE_URL</td><td class="secret-value">&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;</td><td>Neon PostgreSQL connection string</td></tr>
+            <tr><td class="secret-name">VINDI_KEY</td><td class="secret-value">&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;</td><td>API Vindi (Basic auth key)</td></tr>
+            <tr><td class="secret-name">PAGARME_KEY</td><td class="secret-value">&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;</td><td>API Pagar.me (query string key)</td></tr>
+            <tr><td class="secret-name">OMIE_APP_KEY</td><td class="secret-value">&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;</td><td>API Omie Better (app_key)</td></tr>
+            <tr><td class="secret-name">OMIE_APP_SECRET</td><td class="secret-value">&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;</td><td>API Omie Better (app_secret)</td></tr>
+            <tr><td class="secret-name">BMA_KEY</td><td class="secret-value">&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;</td><td>API Omie BMA (app_key)</td></tr>
+            <tr><td class="secret-name">BMA_SECRET</td><td class="secret-value">&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;</td><td>API Omie BMA (app_secret)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div><!-- end content-wrapper -->
+
+  <!-- FOOTER -->
+  <div class="page-footer">
+    Documento de referencia &mdash; Better Education 2026<br>
+    Ultima atualizacao: Maio 2026 &mdash; v2.0<br><br>
+    <a href="index.html" style="color:#60a5fa;text-decoration:none;font-size:11px">&larr; Voltar para Central Financeira</a>
+  </div>
+
+</div><!-- end main -->
+
+<!-- BACK TO TOP -->
+<button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&uarr;</button>
+
+<script>
+/* ========== SIDEBAR TOGGLE (mobile) ========== */
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+}
+// Close sidebar on link click (mobile)
+document.querySelectorAll('.sidebar nav a').forEach(function(a){
+  a.addEventListener('click',function(){
+    if(window.innerWidth<=900) document.getElementById('sidebar').classList.remove('open');
+  });
+});
+
+/* ========== COLLAPSIBLE SECTIONS ========== */
+function toggleSection(header){
+  header.classList.toggle('collapsed');
+  var body=header.nextElementSibling;
+  if(body.classList.contains('hidden')){
+    body.classList.remove('hidden');
+    body.style.maxHeight=body.scrollHeight+'px';
+    setTimeout(function(){body.style.maxHeight='none'},400);
+  } else {
+    body.style.maxHeight=body.scrollHeight+'px';
+    requestAnimationFrame(function(){
+      body.style.maxHeight=body.scrollHeight+'px';
+      requestAnimationFrame(function(){body.classList.add('hidden')});
+    });
+  }
+}
+
+/* ========== TABLE CARD EXPAND ========== */
+function toggleCols(card){
+  var cols=card.querySelector('.table-card-cols');
+  if(cols) cols.classList.toggle('expanded');
+}
+
+/* ========== ACTIVE NAV ON SCROLL ========== */
+var sections=document.querySelectorAll('.section, .hero');
+var navLinks=document.querySelectorAll('.sidebar nav a');
+function updateNav(){
+  var scrollPos=window.scrollY+100;
+  sections.forEach(function(sec){
+    var top=sec.offsetTop;
+    var h=sec.offsetHeight;
+    var id=sec.getAttribute('id');
+    if(scrollPos>=top&&scrollPos<top+h){
+      navLinks.forEach(function(a){
+        a.classList.remove('active');
+        if(a.getAttribute('href')==='#'+id) a.classList.add('active');
+      });
+    }
+  });
+}
+window.addEventListener('scroll',updateNav);
+
+/* ========== BACK TO TOP ========== */
+window.addEventListener('scroll',function(){
+  var btn=document.getElementById('backTop');
+  if(window.scrollY>400) btn.classList.add('show');
+  else btn.classList.remove('show');
+});
+
+/* ========== FADE IN ON SCROLL ========== */
+var fadeEls=document.querySelectorAll('.fade-in');
+var observer=new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}
+  });
+},{threshold:0.1});
+fadeEls.forEach(function(el){observer.observe(el)});
+
+/* ========== CRON TIMELINE ========== */
+(function(){
+  var container=document.getElementById('cronTimeline');
+  if(!container) return;
+  for(var d=1;d<=31;d++){
+    var div=document.createElement('div');
+    div.className='cron-day';
+    var isFull=(d===1||d===11||d===21);
+    var dot=document.createElement('div');
+    dot.className='cron-dot '+(isFull?'full':'daily');
+    var num=document.createElement('div');
+    num.className='day-num';
+    num.textContent=d;
+    div.appendChild(dot);
+    div.appendChild(num);
+    container.appendChild(div);
+  }
+})();
+
+/* ========== SORTABLE TABLES ========== */
+function sortTable(tableId,col){
+  var table=document.getElementById(tableId);
+  var tbody=table.querySelector('tbody');
+  var rows=Array.from(tbody.querySelectorAll('tr'));
+  var asc=table.getAttribute('data-sort-dir')!=='asc';
+  table.setAttribute('data-sort-dir',asc?'asc':'desc');
+  rows.sort(function(a,b){
+    var aVal=a.children[col].textContent.trim().toLowerCase();
+    var bVal=b.children[col].textContent.trim().toLowerCase();
+    return asc?aVal.localeCompare(bVal):bVal.localeCompare(aVal);
+  });
+  rows.forEach(function(r){tbody.appendChild(r)});
+}
+</script>
+</body>
+</html>
