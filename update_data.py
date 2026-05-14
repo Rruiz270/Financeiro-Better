@@ -31,6 +31,7 @@ BMA_SECRET      = os.environ.get('BMA_SECRET', 'e7e7e8ebffe8c76051459f4dbbb468e5
 
 VINDI_AUTH = base64.b64encode(f"{VINDI_KEY}:".encode()).decode()
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
+FULL_REFRESH = os.environ.get('FULL_REFRESH', '').lower() in ('1', 'true', 'yes')
 
 MESES = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun',
          '07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'}
@@ -174,7 +175,10 @@ def omie_call(endpoint, method, params, app_key=None, app_secret=None):
 def omie_paginate(endpoint, method, list_key, per_page=50, delay=3,
                   app_key=None, app_secret=None, recent_pages=None):
     """Paginate an Omie API endpoint.
-    If recent_pages is set, only fetch the last N pages (for incremental runs)."""
+    If recent_pages is set, only fetch the last N pages (for incremental runs).
+    FULL_REFRESH overrides recent_pages and fetches all pages."""
+    if FULL_REFRESH:
+        recent_pages = None
     if app_key is None: app_key = OMIE_APP_KEY
     if app_secret is None: app_secret = OMIE_APP_SECRET
     results, page, total_pages = [], 1, None
@@ -276,7 +280,10 @@ def update_vindi_bills():
 
 
 def _cache_fresh(fonte, max_age_days=7):
-    """Return True if fonte was updated less than max_age_days ago."""
+    """Return True if fonte was updated less than max_age_days ago.
+    Always returns False when FULL_REFRESH is set."""
+    if FULL_REFRESH:
+        return False
     try:
         conn = get_conn()
         cur = conn.cursor()
@@ -1021,7 +1028,8 @@ def log_update(fonte, new, updated, total, duration):
 # ═══════════════════════════════════════════════════════════════════════
 def main():
     start_time = time.time()
-    print(f"=== Better Data Update (Neon) — {datetime.now().strftime('%Y-%m-%d %H:%M')} ===\n")
+    mode = "FULL REFRESH" if FULL_REFRESH else "INCREMENTAL"
+    print(f"=== Better Data Update (Neon) — {datetime.now().strftime('%Y-%m-%d %H:%M')} — {mode} ===\n")
 
     def _elapsed():
         return f"[{time.time()-start_time:.0f}s elapsed]"

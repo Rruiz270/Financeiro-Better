@@ -4,7 +4,13 @@ on:
   schedule:
     - cron: '0 16 * * *'
     - cron: '0 22 * * *'
+    - cron: '0 14 1,11,21 * *'
   workflow_dispatch:
+    inputs:
+      full_refresh:
+        description: 'Full refresh (fetch all data from scratch)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -24,6 +30,19 @@ jobs:
       - name: Install dependencies
         run: pip install psycopg2-binary
 
+      - name: Determine refresh mode
+        id: mode
+        run: |
+          CRON="${{ github.event.schedule }}"
+          MANUAL="${{ github.event.inputs.full_refresh }}"
+          if [ "$MANUAL" = "true" ] || [ "$CRON" = "0 14 1,11,21 * *" ]; then
+            echo "FULL_REFRESH=true" >> $GITHUB_ENV
+            echo "Full refresh mode"
+          else
+            echo "FULL_REFRESH=false" >> $GITHUB_ENV
+            echo "Incremental mode"
+          fi
+
       - name: Update data from APIs
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -33,6 +52,7 @@ jobs:
           OMIE_APP_SECRET: ${{ secrets.OMIE_APP_SECRET }}
           BMA_KEY: ${{ secrets.BMA_KEY }}
           BMA_SECRET: ${{ secrets.BMA_SECRET }}
+          FULL_REFRESH: ${{ env.FULL_REFRESH }}
         run: python update_data.py
 
       - name: Commit and push
@@ -40,5 +60,5 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add *.js
-          git diff --cached --quiet || git commit -m "chore: daily data update $(date +%Y-%m-%d)"
+          git diff --cached --quiet || git commit -m "chore: data update $(date +%Y-%m-%d) ${{ env.FULL_REFRESH == 'true' && '(full refresh)' || '(incremental)' }}"
           git push
