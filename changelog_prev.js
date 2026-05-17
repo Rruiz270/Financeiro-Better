@@ -1,1 +1,1 @@
-var changelog = {"last_update": "2026-05-16 16:53", "previous_update": "2026-05-15 22:59", "changes": [{"month": "Mai/2026", "field": "rec", "old": 167405.85, "new": 169488.46, "diff": 2082.61, "label": "Receitas"}, {"month": "Mai/2026", "field": "pend", "old": 99565.95, "new": 103562.99, "diff": 3997.04, "label": "Pendentes"}], "atypical": [], "summary": "Receitas +R$ 2.1k"};
+var changelog = {"last_update": "2026-05-16 22:51", "previous_update": "2026-05-16 16:53", "changes": [], "atypical": [], "summary": "Sem alteracoes (primeira execucao ou dados identicos)"};
